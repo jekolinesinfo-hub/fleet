@@ -51,8 +51,7 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
     });
   };
 
-  const handleSearch = () => {
-    // Mock search - in a real app this would query the database
+  const handleSearch = async () => {
     if (searchId.length < 3) {
       toast({
         title: "ID troppo corto",
@@ -62,23 +61,40 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
       return;
     }
 
-    // Simulate search results
-    const mockResults = [
-      { id: 'DRV-ABC123XY', name: 'Mario Rossi', status: 'pending' },
-      { id: 'DRV-DEF456ZW', name: 'Luigi Bianchi', status: 'active' }
-    ];
+    // Search in real driver_devices table
+    const { data: devices, error } = await supabase
+      .from('driver_devices')
+      .select('*')
+      .ilike('device_id', `%${searchId}%`)
+      .limit(5);
 
-    const found = mockResults.find(r => r.id.includes(searchId.toUpperCase()));
-    
-    if (found) {
+    if (error) {
+      toast({ title: "Errore", description: "Impossibile effettuare la ricerca", variant: "destructive" });
+      return;
+    }
+
+    if (devices && devices.length > 0) {
+      const device = devices[0];
+      // Try to get driver profile if driver_id exists
+      let driverName = device.driver_id;
+      if (device.driver_id && device.driver_id !== 'UNASSIGNED') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', device.driver_id)
+          .single();
+        
+        driverName = profile?.full_name || profile?.email || device.driver_id;
+      }
+
       toast({
-        title: "Conducente trovato",
-        description: `${found.name} - Stato: ${found.status}`,
+        title: "Dispositivo trovato", 
+        description: `${device.device_name || device.device_id} - Conducente: ${driverName}`,
       });
     } else {
       toast({
         title: "Nessun risultato",
-        description: "Nessun conducente trovato con questo ID.",
+        description: "Nessun dispositivo trovato con questo ID.",
         variant: "destructive"
       });
     }
@@ -138,20 +154,20 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Cerca Conducente */}
+        {/* Cerca Dispositivo */}
         <Card className="p-6 shadow-elevated">
           <div className="flex items-center space-x-2 mb-4">
             <UserPlus className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Cerca Conducente Esistente</h3>
+            <h3 className="font-semibold">Cerca Dispositivo Esistente</h3>
           </div>
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="search-id">Codice ID Conducente</Label>
+              <Label htmlFor="search-id">Cerca per ID Dispositivo</Label>
               <div className="flex space-x-2 mt-1">
                 <Input
                   id="search-id"
-                  placeholder="Inserisci ID (es: DRV-ABC123XY)"
+                  placeholder="Inserisci ID dispositivo"
                   value={searchId}
                   onChange={(e) => setSearchId(e.target.value)}
                   className="flex-1"
@@ -161,7 +177,7 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Cerca un conducente già registrato tramite il suo codice ID
+                Cerca un dispositivo già registrato nella tua flotta
               </p>
             </div>
 
@@ -172,7 +188,7 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
               </div>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Il conducente installa l'app mobile</li>
-                <li>• Inserisce il codice ID nell'app</li>
+                <li>• Inserisce il codice ID dispositivo nell'app</li>
                 <li>• L'app si collega automaticamente a questa dashboard</li>
                 <li>• Il monitoraggio inizia immediatamente</li>
               </ul>
@@ -293,54 +309,55 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
 
             <Button 
               onClick={handleRegisterDriver}
-              className="w-full gradient-success text-white"
+              className="w-full"
+              disabled={isSaving}
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Registra Conducente
+              {isSaving ? 'Registrazione...' : 'Registra Conducente'}
             </Button>
           </div>
         </Card>
       </div>
 
-      {/* Istruzioni App Mobile */}
-      <Card className="p-6 shadow-elevated">
-        <div className="flex items-center space-x-2 mb-4">
-          <Truck className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold">Istruzioni per l'App Mobile</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-primary/5 rounded-lg">
-            <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-              1
-            </div>
-            <h4 className="font-medium mb-2">Download App</h4>
-            <p className="text-sm text-muted-foreground">
-              Il conducente scarica l'app "Fleet Tracker" dal Play Store o App Store
-            </p>
-          </div>
-          
-          <div className="text-center p-4 bg-primary/5 rounded-lg">
-            <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-              2
-            </div>
-            <h4 className="font-medium mb-2">Inserisci Codice</h4>
-            <p className="text-sm text-muted-foreground">
-              Inserisce il codice ID generato nella schermata di registrazione dell'app
-            </p>
-          </div>
-          
-          <div className="text-center p-4 bg-primary/5 rounded-lg">
-            <div className="w-12 h-12 gradient-success rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-              3
-            </div>
-            <h4 className="font-medium mb-2">Monitoraggio Attivo</h4>
-            <p className="text-sm text-muted-foreground">
-              L'app si collega alla dashboard e inizia il tracking automatico dei viaggi
-            </p>
-          </div>
-        </div>
-      </Card>
+            {/* Istruzioni App Mobile */}
+            <Card className="p-6 shadow-elevated">
+              <div className="flex items-center space-x-2 mb-4">
+                <Truck className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">Istruzioni per l'App Mobile</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-primary/5 rounded-lg">
+                  <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
+                    1
+                  </div>
+                  <h4 className="font-medium mb-2">Download App</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Il conducente scarica l'app mobile Fleet Tracker
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 bg-primary/5 rounded-lg">
+                  <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
+                    2
+                  </div>
+                  <h4 className="font-medium mb-2">Accesso</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Il conducente accede con le credenziali appena create
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 bg-primary/5 rounded-lg">
+                  <div className="w-12 h-12 gradient-success rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
+                    3
+                  </div>
+                  <h4 className="font-medium mb-2">Monitoraggio Attivo</h4>
+                  <p className="text-sm text-muted-foreground">
+                    L'app inizia il tracking GPS automatico
+                  </p>
+                </div>
+              </div>
+            </Card>
     </div>
   );
 };

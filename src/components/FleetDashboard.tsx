@@ -17,7 +17,7 @@ const FleetDashboard = () => {
   const { signOut, profile, isAdmin, isFleetManager } = useAuth();
   const { drivers, vehicles, getActiveDrivers, loading } = useFleetData();
   const { t } = useTranslation();
-  const [activeView, setActiveView] = useState<'dashboard' | 'driver' | 'registration'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'driver' | 'registration' | 'fleet'>('dashboard');
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [trackedDriverId, setTrackedDriverId] = useState<string | null>(null);
 
@@ -71,11 +71,12 @@ const FleetDashboard = () => {
               )}
               <div>
                 <h1 className="text-2xl font-bold text-foreground">{t('fleetManagement')}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {activeView === 'dashboard' && t('fleetControlDashboard')}
-                  {activeView === 'driver' && t('driverDetails')}
-                  {activeView === 'registration' && t('driverRegistration')}
-                </p>
+                 <p className="text-sm text-muted-foreground">
+                   {activeView === 'dashboard' && t('fleetControlDashboard')}
+                   {activeView === 'driver' && t('driverDetails')}
+                   {activeView === 'registration' && t('driverRegistration')}
+                   {activeView === 'fleet' && 'Gestione Flotta'}
+                 </p>
               </div>
             </div>
             
@@ -97,16 +98,27 @@ const FleetDashboard = () => {
                 </Link>
               )}
               
-              {isAdmin && (
-                <Button
-                  onClick={() => setActiveView('registration')}
-                  variant="outline"
-                  size="sm"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  {t('registerDriver')}
-                </Button>
-              )}
+               {(isAdmin || isFleetManager) && (
+                 <Button
+                   onClick={() => setActiveView('fleet')}
+                   variant="outline"
+                   size="sm"
+                 >
+                   <Settings className="h-4 w-4 mr-2" />
+                   Gestione Flotta
+                 </Button>
+               )}
+               
+               {(isAdmin || isFleetManager) && (
+                 <Button
+                   onClick={() => setActiveView('registration')}
+                   variant="outline"
+                   size="sm"
+                 >
+                   <UserPlus className="h-4 w-4 mr-2" />
+                   {t('registerDriver')}
+                 </Button>
+               )}
               
               <Button
                 onClick={signOut}
@@ -168,39 +180,44 @@ const FleetDashboard = () => {
               </Card>
             </div>
 
-            {/* Main Dashboard Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Map */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    {t('realTimeMap')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <FleetMap 
-                    selectedDriverId={selectedDriverId} 
-                    trackedDriverId={trackedDriverId}
-                  />
-                </CardContent>
-              </Card>
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Fleet Manager Component */}
+        <div className="lg:col-span-2">
+          <FleetManager />
+        </div>
 
-              {/* Drivers List */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('activeDriversList')}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <DriversList 
-                    onDriverSelect={handleDriverSelect}
-                    onDriverTrack={handleDriverTrack}
-                    driversData={activeDriversData}
-                    loading={loading}
-                  />
-                </CardContent>
-              </Card>
-            </div>
+        {/* Map */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              {t('realTimeMap')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <FleetMap 
+              selectedDriverId={selectedDriverId} 
+              trackedDriverId={trackedDriverId}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Drivers List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('activeDriversList')}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <DriversList 
+              onDriverSelect={handleDriverSelect}
+              onDriverTrack={handleDriverTrack}
+              driversData={activeDriversData}
+              loading={loading}
+            />
+          </CardContent>
+        </Card>
+      </div>
           </div>
         )}
 
@@ -213,6 +230,26 @@ const FleetDashboard = () => {
 
         {activeView === 'registration' && (
           <DriverRegistration onBack={handleBackToDashboard} />
+        )}
+
+        {activeView === 'fleet' && (
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <Button onClick={handleBackToDashboard} variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Torna alla Dashboard
+              </Button>
+              <div>
+                <h2 className="text-2xl font-bold">Gestione Flotta</h2>
+                <p className="text-muted-foreground">Aggiungi o rimuovi veicoli dalla tua flotta</p>
+              </div>
+            </div>
+            <FleetManager />
+          </div>
+        )}
+
+        {activeView === 'fleet' && (
+          <FleetManager />
         )}
       </main>
     </div>
