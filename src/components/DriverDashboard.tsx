@@ -19,11 +19,18 @@ import {
 } from "lucide-react";
 import { useDriverStats } from "@/hooks/useDriverStats";
 import { useGPSTracking } from "@/hooks/useGPSTracking";
+import { useTranslation } from "@/contexts/I18nContext";
+import { useFleetConfig } from "@/contexts/FleetConfigContext";
+import LanguageSelector from "@/components/LanguageSelector";
+import FleetTypeSelector from "@/components/FleetTypeSelector";
 
 const DriverDashboard = () => {
   const [driverId, setDriverId] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
   const [deviceId] = useState(() => 'device_' + Math.random().toString(36).substr(2, 9));
+  
+  const { t } = useTranslation();
+  const { config, fleetType } = useFleetConfig();
 
   const { stats, violations, loading, needsBreak, formatDrivingTime } = useDriverStats(driverId);
   
@@ -39,7 +46,7 @@ const DriverDashboard = () => {
 
   const handleStartShift = () => {
     if (!driverId.trim()) {
-      alert('Inserisci il tuo ID driver');
+      alert(t('enterDriverId'));
       return;
     }
     setIsInitialized(true);
@@ -60,39 +67,53 @@ const DriverDashboard = () => {
   };
 
   const getDrivingStatus = () => {
-    if (!stats.isOnShift) return { text: 'Turno Terminato', color: 'secondary' };
-    if (needsBreak()) return { text: 'Pausa Richiesta', color: 'destructive' };
-    if (stats.remainingDrivingTime <= 60) return { text: 'Fine Turno Vicina', color: 'destructive' };
-    if (stats.remainingDrivingTime <= 120) return { text: 'Attenzione Orario', color: 'secondary' };
-    return { text: 'In Servizio', color: 'default' };
+    if (!stats.isOnShift) return { text: t('shiftEnded'), color: 'secondary' };
+    if (needsBreak()) return { text: t('breakRequired'), color: 'destructive' };
+    if (stats.remainingDrivingTime <= 60) return { text: t('shiftEndingSoon'), color: 'destructive' };
+    if (stats.remainingDrivingTime <= 120) return { text: t('timeWarning'), color: 'secondary' };
+    return { text: t('onDuty'), color: 'default' };
+  };
+
+  const getBreakAlertMessage = () => {
+    if (fleetType === 'trucks') {
+      return t('truckBreakAlert');
+    }
+    return t('breakAlert');
   };
 
   if (!isInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
         <div className="max-w-md mx-auto">
+          {/* Language selector at the top */}
+          <div className="mb-6 flex justify-end">
+            <LanguageSelector />
+          </div>
+          
           <div className="text-center py-8">
             <div className="flex justify-center mb-6">
               <div className="p-4 bg-primary/10 rounded-full">
                 <Truck className="h-12 w-12 text-primary" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold mb-2">Driver Dashboard</h1>
-            <p className="text-muted-foreground mb-8">Sistema di controllo per autisti</p>
+            <h1 className="text-3xl font-bold mb-2">{t('driverDashboard')}</h1>
+            <p className="text-muted-foreground mb-8">{t('startShift')}</p>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Inizia il tuo turno</CardTitle>
+              <CardTitle>{t('startShift')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <FleetTypeSelector />
+              
               <div>
-                <Label htmlFor="driverId">ID Driver</Label>
+                <Label htmlFor="driverId">{t('driverId')}</Label>
                 <Input
                   id="driverId"
                   value={driverId}
                   onChange={(e) => setDriverId(e.target.value)}
-                  placeholder="Inserisci il tuo ID driver"
+                  placeholder={t('enterDriverId')}
                 />
               </div>
               <Button 
@@ -100,7 +121,7 @@ const DriverDashboard = () => {
                 className="w-full"
                 disabled={!driverId.trim()}
               >
-                Avvia Turno
+                {t('startShiftBtn')}
               </Button>
             </CardContent>
           </Card>
@@ -117,12 +138,16 @@ const DriverDashboard = () => {
         
         {/* Header */}
         <div className="text-center py-4">
-          <div className="flex items-center justify-center space-x-3 mb-2">
-            <Truck className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold">Dashboard Autista</h1>
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex items-center space-x-3">
+              <Truck className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl font-bold">{t('driverDashboard')}</h1>
+            </div>
+            <LanguageSelector />
           </div>
+          
           <div className="flex items-center justify-center space-x-2">
-            <span className="text-sm text-muted-foreground">Driver ID: {driverId}</span>
+            <span className="text-sm text-muted-foreground">{t('driverId')}: {driverId}</span>
             <Badge variant={status.color as any}>{status.text}</Badge>
           </div>
         </div>
@@ -132,7 +157,7 @@ const DriverDashboard = () => {
           <Alert>
             <Coffee className="h-4 w-4" />
             <AlertDescription>
-              Hai guidato per oltre 4.5 ore. È obbligatoria una pausa di almeno 45 minuti.
+              {getBreakAlertMessage()}
             </AlertDescription>
           </Alert>
         )}
@@ -141,50 +166,50 @@ const DriverDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Distanza Oggi</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('distanceToday')}</CardTitle>
               <Route className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.distanceToday} km</div>
-              <p className="text-xs text-muted-foreground">Percorsi nel turno</p>
+              <div className="text-2xl font-bold">{stats.distanceToday} {t('kmUnit')}</div>
+              <p className="text-xs text-muted-foreground">{t('effectiveDriving')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tempo Guida</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('drivingTime')}</CardTitle>
               <Timer className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatDrivingTime(stats.drivingTimeToday)}</div>
-              <p className="text-xs text-muted-foreground">Di guida effettiva</p>
+              <p className="text-xs text-muted-foreground">{t('effectiveDriving')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tempo Rimanente</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('remainingTime')}</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-primary">
                 {formatDrivingTime(stats.remainingDrivingTime)}
               </div>
-              <p className="text-xs text-muted-foreground">Limite giornaliero</p>
+              <p className="text-xs text-muted-foreground">{t('dailyLimit')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Velocità Attuale</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('currentSpeed')}</CardTitle>
               <Gauge className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {currentPosition ? getSpeedKmh(currentPosition.speed) : 0} km/h
+                {currentPosition ? getSpeedKmh(currentPosition.speed) : 0} {t('kmhUnit')}
               </div>
               <p className="text-xs text-muted-foreground">
-                {isTracking ? 'GPS attivo' : 'GPS inattivo'}
+                {isTracking ? t('active') : t('inactive')}
               </p>
             </CardContent>
           </Card>
@@ -196,9 +221,9 @@ const DriverDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Navigation className="h-5 w-5" />
-                <span>Status GPS</span>
+                <span>{t('gpsStatus')}</span>
                 <Badge variant={isTracking ? "default" : "secondary"}>
-                  {isTracking ? "ATTIVO" : "INATTIVO"}
+                  {isTracking ? t('active') : t('inactive')}
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -213,25 +238,25 @@ const DriverDashboard = () => {
               {currentPosition ? (
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Latitudine:</span>
+                    <span className="text-muted-foreground">{t('latitude')}:</span>
                     <span className="font-mono">{currentPosition.latitude.toFixed(6)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Longitudine:</span>
+                    <span className="text-muted-foreground">{t('longitude')}:</span>
                     <span className="font-mono">{currentPosition.longitude.toFixed(6)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Precisione:</span>
-                    <span className="font-mono">{currentPosition.accuracy?.toFixed(1)}m</span>
+                    <span className="text-muted-foreground">{t('accuracy')}:</span>
+                    <span className="font-mono">{currentPosition.accuracy?.toFixed(1)}{t('metersUnit')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Ultimo aggiornamento:</span>
-                    <span className="text-xs">{new Date(currentPosition.timestamp).toLocaleTimeString('it-IT')}</span>
+                    <span className="text-muted-foreground">{t('lastUpdate')}:</span>
+                    <span className="text-xs">{new Date(currentPosition.timestamp).toLocaleTimeString()}</span>
                   </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {isTracking ? 'Acquisizione posizione in corso...' : 'GPS non attivo'}
+                  {isTracking ? t('acquiringPosition') : t('gpsInactive')}
                 </p>
               )}
             </CardContent>
@@ -242,23 +267,23 @@ const DriverDashboard = () => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Shield className="h-5 w-5" />
-                  <span>Sicurezza</span>
+                  <span>{t('safety')}</span>
                 </div>
                 <Badge variant={stats.speedViolationsToday > 0 ? "destructive" : "default"}>
-                  {stats.speedViolationsToday} Infrazioni
+                  {stats.speedViolationsToday} {t('violations')}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Infrazioni oggi:</span>
+                  <span className="text-muted-foreground">{t('violationsToday')}:</span>
                   <span className="font-medium">{stats.speedViolationsToday}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Status:</span>
+                  <span className="text-muted-foreground">{t('status')}:</span>
                   <Badge variant={stats.speedViolationsToday === 0 ? "default" : "destructive"}>
-                    {stats.speedViolationsToday === 0 ? 'Guida Sicura' : 'Attenzione'}
+                    {stats.speedViolationsToday === 0 ? t('safeDriver') : t('warning')}
                   </Badge>
                 </div>
               </div>
@@ -272,7 +297,7 @@ const DriverDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <AlertTriangle className="h-5 w-5" />
-                <span>Infrazioni Oggi</span>
+                <span>{t('violationsListTitle')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -288,12 +313,12 @@ const DriverDashboard = () => {
                           {violation.severity.toUpperCase()}
                         </Badge>
                         <span className="text-sm font-medium">
-                          {new Date(violation.timestamp).toLocaleTimeString('it-IT')}
+                          {new Date(violation.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {violation.recorded_speed_kmh} km/h in zona {violation.speed_limit_kmh} km/h 
-                        (+{violation.excess_speed_kmh} km/h)
+                        {violation.recorded_speed_kmh} {t('kmhUnit')} in zona {violation.speed_limit_kmh} {t('kmhUnit')} 
+                        (+{violation.excess_speed_kmh} {t('kmhUnit')})
                       </p>
                     </div>
                   </div>
@@ -313,7 +338,7 @@ const DriverDashboard = () => {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-xs text-muted-foreground">
-              ⚠️ Mantieni sempre l'app aperta durante il turno • Sistema monitorato h24
+              {t('keepAppOpen')}
             </p>
           </div>
         </div>

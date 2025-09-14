@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useFleetConfig } from '@/contexts/FleetConfigContext';
 
 interface DriverStats {
   distanceToday: number; // in km
@@ -22,14 +23,12 @@ interface SpeedViolation {
   violation_lng: number;
 }
 
-const DAILY_DRIVING_LIMIT_MINUTES = 9 * 60; // 9 ore limite giornaliero
-const BREAK_REQUIRED_AFTER_MINUTES = 4.5 * 60; // Pausa obbligatoria dopo 4.5 ore
-
 export const useDriverStats = (driverId: string) => {
+  const { config } = useFleetConfig();
   const [stats, setStats] = useState<DriverStats>({
     distanceToday: 0,
     drivingTimeToday: 0,
-    remainingDrivingTime: DAILY_DRIVING_LIMIT_MINUTES,
+    remainingDrivingTime: config.dailyDrivingLimit,
     speedViolationsToday: 0,
     currentShiftStart: null,
     isOnShift: false
@@ -133,7 +132,7 @@ export const useDriverStats = (driverId: string) => {
         drivingMinutes = movingTimeMs / 1000 / 60;
       }
 
-      const remainingTime = Math.max(0, DAILY_DRIVING_LIMIT_MINUTES - drivingMinutes);
+      const remainingTime = Math.max(0, config.dailyDrivingLimit - drivingMinutes);
 
       setStats({
         distanceToday: Math.round(totalDistance * 100) / 100, // Round to 2 decimals
@@ -160,10 +159,10 @@ export const useDriverStats = (driverId: string) => {
     const interval = setInterval(fetchDriverStats, 2 * 60 * 1000);
     
     return () => clearInterval(interval);
-  }, [driverId]);
+  }, [driverId, config]);
 
   const needsBreak = () => {
-    return stats.drivingTimeToday >= BREAK_REQUIRED_AFTER_MINUTES && 
+    return stats.drivingTimeToday >= config.breakRequiredAfter && 
            stats.remainingDrivingTime > 0;
   };
 
