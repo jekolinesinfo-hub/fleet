@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { FleetConfigProvider } from "@/contexts/FleetConfigContext";
 import { Capacitor } from "@capacitor/core";
-import DriverDashboard from "@/components/DriverDashboard";
+import TripDashboard from "@/components/TripDashboard";
 
 const queryClient = new QueryClient();
 
@@ -66,7 +66,9 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<AutoRedirect />} />
               <Route path="/driver" element={<DriverApp />} />
-              <Route path="/driver-dashboard" element={<DriverDashboard />} />
+              <Route path="/driver-dashboard" element={
+                <TripDashboard />
+              } />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Index />
