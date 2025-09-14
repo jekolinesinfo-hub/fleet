@@ -5,9 +5,10 @@ import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
 
 interface FleetMapProps {
   selectedDriverId?: string | null;
+  trackedDriverId?: string | null;
 }
 
-const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
+const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef<{ [key: string]: L.Marker }>({});
@@ -52,6 +53,35 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
       addVehicleMarkers();
     }
   }, [isMapReady, gpsData, devices]);
+
+  // Effetto per zoomare sul driver tracciato
+  useEffect(() => {
+    if (isMapReady && trackedDriverId && map.current) {
+      console.log('🎯 Zoomando su driver tracked:', trackedDriverId);
+      const driverPosition = getLatestPositionForDriver(trackedDriverId);
+      if (driverPosition) {
+        // Zoom e animazione sulla posizione del driver
+        map.current.flyTo([driverPosition.latitude, driverPosition.longitude], 15, {
+          duration: 2, // 2 secondi di animazione
+          easeLinearity: 0.1
+        });
+        
+        // Pulsa il marker per evidenziare
+        const marker = markers.current[trackedDriverId];
+        if (marker) {
+          const markerElement = marker.getElement();
+          if (markerElement && markerElement.firstChild) {
+            const iconDiv = markerElement.firstChild as HTMLElement;
+            iconDiv.classList.add('marker-pulse');
+            // Rimuovi la classe dopo l'animazione
+            setTimeout(() => {
+              iconDiv.classList.remove('marker-pulse');
+            }, 3000);
+          }
+        }
+      }
+    }
+  }, [trackedDriverId, isMapReady, getLatestPositionForDriver]);
 
   useEffect(() => {
     if (isMapReady && selectedDriverId && map.current) {

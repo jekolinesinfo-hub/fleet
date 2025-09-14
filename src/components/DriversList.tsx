@@ -1,4 +1,4 @@
-import { Clock, MapPin, Truck, AlertTriangle, Phone } from "lucide-react";
+import { Clock, MapPin, Truck, AlertTriangle, Phone, Navigation } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,7 @@ const mockDrivers = [
 
 interface DriversListProps {
   onDriverSelect: (driverId: string) => void;
+  onDriverTrack: (driverId: string) => void;
 }
 
 const getStatusInfo = (status: string) => {
@@ -112,7 +113,7 @@ const getStatusInfo = (status: string) => {
   }
 };
 
-const DriversList = ({ onDriverSelect }: DriversListProps) => {
+const DriversList = ({ onDriverSelect, onDriverTrack }: DriversListProps) => {
   return (
     <div className="space-y-2 p-4 max-h-[400px] overflow-y-auto">
       {mockDrivers.map((driver) => {
@@ -121,12 +122,14 @@ const DriversList = ({ onDriverSelect }: DriversListProps) => {
         return (
           <Card 
             key={driver.id} 
-            className="p-4 cursor-pointer transition-all duration-200 hover:shadow-card hover:border-primary/50"
-            onClick={() => onDriverSelect(driver.id)}
+            className="p-4 transition-all duration-200 hover:shadow-card hover:border-primary/50"
           >
             <div className="flex items-center justify-between">
               {/* Info Conducente */}
-              <div className="flex items-center space-x-3 flex-1">
+              <div 
+                className="flex items-center space-x-3 flex-1 cursor-pointer" 
+                onClick={() => onDriverSelect(driver.id)}
+              >
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="gradient-primary text-white font-semibold">
                     {driver.name.split(' ').map(n => n[0]).join('')}
@@ -155,8 +158,24 @@ const DriversList = ({ onDriverSelect }: DriversListProps) => {
                 </div>
               </div>
 
-              {/* Indicatori di Stato */}
-              <div className="text-right space-y-1">
+              {/* Azioni e Indicatori */}
+              <div className="flex flex-col items-end space-y-2">
+                {/* Pulsante Track GPS */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDriverTrack(driver.id);
+                  }}
+                >
+                  <Navigation className="h-3 w-3 mr-1" />
+                  Traccia GPS
+                </Button>
+                
+                {/* Indicatori di Stato */}
+                <div className="text-right space-y-1">
                 <div className="text-xs">
                   <span className="text-muted-foreground">Guida: </span>
                   <span className={`font-medium ${
@@ -173,8 +192,9 @@ const DriversList = ({ onDriverSelect }: DriversListProps) => {
                   </div>
                 )}
                 
-                <div className="text-xs text-muted-foreground">
-                  {driver.lastUpdate}
+                  <div className="text-xs text-muted-foreground">
+                    {driver.lastUpdate}
+                  </div>
                 </div>
               </div>
             </div>

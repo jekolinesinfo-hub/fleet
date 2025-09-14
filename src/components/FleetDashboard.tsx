@@ -20,15 +20,24 @@ const mockStats = {
 const FleetDashboard = () => {
   const [activeView, setActiveView] = useState<'dashboard' | 'driver' | 'registration'>('dashboard');
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [trackedDriverId, setTrackedDriverId] = useState<string | null>(null);
 
   const handleDriverSelect = (driverId: string) => {
     setSelectedDriverId(driverId);
     setActiveView('driver');
   };
 
+  const handleDriverTrack = (driverId: string) => {
+    console.log('🎯 Tracking driver:', driverId);
+    setTrackedDriverId(driverId);
+    // Reset dopo qualche secondo per evitare loop continui
+    setTimeout(() => setTrackedDriverId(null), 2000);
+  };
+
   const handleBackToDashboard = () => {
     setActiveView('dashboard');
     setSelectedDriverId(null);
+    setTrackedDriverId(null);
   };
 
   return (
@@ -116,7 +125,10 @@ const FleetDashboard = () => {
                     </div>
                   </div>
                   <div className="p-0">
-                    <FleetMap selectedDriverId={selectedDriverId} />
+                    <FleetMap 
+                      selectedDriverId={selectedDriverId} 
+                      trackedDriverId={trackedDriverId}
+                    />
                   </div>
                 </Card>
 
@@ -125,7 +137,10 @@ const FleetDashboard = () => {
                   <div className="p-4 border-b">
                     <h3 className="font-semibold">Conducenti Attivi</h3>
                   </div>
-                  <DriversList onDriverSelect={handleDriverSelect} />
+                  <DriversList 
+                    onDriverSelect={handleDriverSelect}
+                    onDriverTrack={handleDriverTrack}
+                  />
                 </Card>
               </div>
             </div>
