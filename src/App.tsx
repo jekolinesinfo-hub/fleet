@@ -49,12 +49,13 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={
+              <Route path="/" element={<DriverApp />} />
+              <Route path="/driver" element={<DriverApp />} />
+              <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Index />
                 </ProtectedRoute>
               } />
-              <Route path="/driver" element={<DriverApp />} />
               <Route path="/admin" element={
                 <ProtectedRoute adminOnly>
                   <AdminPanel />
