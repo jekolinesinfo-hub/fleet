@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          driver_id: string
+          expires_at: string | null
+          id: string
+          is_acknowledged: boolean | null
+          is_read: boolean | null
+          message: string
+          organization_id: string | null
+          severity: string | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          driver_id: string
+          expires_at?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_read?: boolean | null
+          message: string
+          organization_id?: string | null
+          severity?: string | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          driver_id?: string
+          expires_at?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_read?: boolean | null
+          message?: string
+          organization_id?: string | null
+          severity?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       driver_devices: {
         Row: {
           created_at: string
@@ -57,6 +99,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      drivers: {
+        Row: {
+          created_at: string | null
+          device_id: string | null
+          driver_id: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          organization_id: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+          vehicle_plate: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id?: string | null
+          driver_id: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vehicle_plate?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string | null
+          driver_id?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vehicle_plate?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: []
       }
       gps_tracking: {
         Row: {
@@ -273,6 +360,54 @@ export type Database = {
           speed_limit_kmh?: number
           updated_at?: string
           zone_type?: string
+        }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          created_at: string | null
+          distance_km: number | null
+          driver_id: string
+          end_location: string | null
+          end_time: string | null
+          id: string
+          notes: string | null
+          organization_id: string | null
+          start_location: string | null
+          start_time: string | null
+          status: string | null
+          trip_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          distance_km?: number | null
+          driver_id: string
+          end_location?: string | null
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          start_location?: string | null
+          start_time?: string | null
+          status?: string | null
+          trip_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          distance_km?: number | null
+          driver_id?: string
+          end_location?: string | null
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          start_location?: string | null
+          start_time?: string | null
+          status?: string | null
+          trip_code?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
