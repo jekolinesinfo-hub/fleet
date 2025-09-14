@@ -5,10 +5,6 @@ const config: CapacitorConfig = {
   appName: 'fleet-harmony-alert',
   webDir: 'dist',
   bundledWebRuntime: false,
-  server: {
-    url: 'https://517ad19e-81ee-4c3f-8bc2-399c7e94180f.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
-  },
 };
 
 export default config;

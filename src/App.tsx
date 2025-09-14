@@ -54,11 +54,7 @@ const App = () => (
                   <Index />
                 </ProtectedRoute>
               } />
-              <Route path="/driver" element={
-                <ProtectedRoute>
-                  <DriverApp />
-                </ProtectedRoute>
-              } />
+              <Route path="/driver" element={<DriverApp />} />
               <Route path="/admin" element={
                 <ProtectedRoute adminOnly>
                   <AdminPanel />

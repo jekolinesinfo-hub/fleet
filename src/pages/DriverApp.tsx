@@ -1,7 +1,7 @@
-import DriverDashboard from "@/components/DriverDashboard";
+import DriverCodeGenerator from "@/components/DriverCodeGenerator";
 
 const DriverApp = () => {
-  return <DriverDashboard />;
+  return <DriverCodeGenerator />;
 };
 
 export default DriverApp;
