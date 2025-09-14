@@ -42,7 +42,7 @@ const AdminPanel = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserFullName, setNewUserFullName] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
-  const [useGeneratedPassword, setUseGeneratedPassword] = useState(true);
+  const [useGeneratedPassword, setUseGeneratedPassword] = useState(false);
   const [newUserRole, setNewUserRole] = useState<'admin' | 'fleet_manager' | 'driver'>('fleet_manager');
   const [selectedOrgForNewUser, setSelectedOrgForNewUser] = useState('none');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
