@@ -18,7 +18,7 @@ import DriverDashboard from "@/components/DriverDashboard";
 
 const queryClient = new QueryClient();
 
-// Auto-redirect component for root path
+// Auto-redirect component for root path  
 const AutoRedirect = () => {
   const isNative = Capacitor.isNativePlatform();
   
@@ -26,8 +26,8 @@ const AutoRedirect = () => {
     // App nativa -> Driver Dashboard
     return <Navigate to="/driver-dashboard" replace />;
   } else {
-    // Web -> Fleet Dashboard (protetto)
-    return <Navigate to="/dashboard" replace />;
+    // Web -> Pagina selezione o dashboard admin (per ora driver)
+    return <Navigate to="/driver-dashboard" replace />;
   }
 };
 
