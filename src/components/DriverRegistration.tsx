@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 interface DriverRegistrationProps {
   onBack: () => void;
@@ -18,6 +20,7 @@ const generateId = () => {
 
 const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
   const { toast } = useToast();
+  const { userOrganizations, organizations } = useOrganizations();
   const [generatedId, setGeneratedId] = useState(generateId());
   const [searchId, setSearchId] = useState('');
   const [newDriverData, setNewDriverData] = useState({
@@ -28,6 +31,9 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
     licenseNumber: '',
     company: ''
   });
+  const [password, setPassword] = useState('');
+  const [orgId, setOrgId] = useState<string | 'auto'>(userOrganizations[0]?.organization_id || 'auto');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleGenerateNewId = () => {
     setGeneratedId(generateId());
@@ -78,31 +84,42 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
     }
   };
 
-  const handleRegisterDriver = () => {
-    if (!newDriverData.name || !newDriverData.phone || !newDriverData.vehicleType) {
+  const handleRegisterDriver = async () => {
+    if (!newDriverData.name || !newDriverData.email || password.length < 8) {
       toast({
         title: "Campi obbligatori",
-        description: "Compila tutti i campi obbligatori.",
+        description: "Nome, email e password (min 8 caratteri) sono obbligatori.",
         variant: "destructive"
       });
       return;
     }
 
-    toast({
-      title: "Conducente registrato",
-      description: `${newDriverData.name} è stato registrato con successo con ID: ${generatedId}`,
+    const targetOrg = orgId === 'auto' ? userOrganizations[0]?.organization_id : orgId;
+    if (!targetOrg) {
+      toast({ title: "Organizzazione mancante", description: "Impossibile determinare l'organizzazione.", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    const { error, data } = await supabase.functions.invoke('create-user', {
+      body: {
+        email: newDriverData.email.trim(),
+        password,
+        full_name: newDriverData.name.trim(),
+        role: 'driver',
+        organization_id: targetOrg,
+      },
     });
 
-    // Reset form
-    setNewDriverData({
-      name: '',
-      phone: '',
-      email: '',
-      vehicleType: '',
-      licenseNumber: '',
-      company: ''
-    });
-    setGeneratedId(generateId());
+    if (error) {
+      toast({ title: 'Errore', description: error.message || 'Registrazione fallita', variant: 'destructive' });
+    } else {
+      toast({ title: 'Conducente registrato', description: `${newDriverData.name} può ora accedere con le credenziali inserite.` });
+      // Reset form
+      setNewDriverData({ name: '', phone: '', email: '', vehicleType: '', licenseNumber: '', company: '' });
+      setPassword('');
+    }
+    setIsSaving(false);
   };
 
   return (
@@ -215,13 +232,25 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
               </div>
 
               <div>
-                <Label htmlFor="driver-email">Email</Label>
+                <Label htmlFor="driver-email">Email *</Label>
                 <Input
                   id="driver-email"
                   type="email"
                   placeholder="mario.rossi@email.com"
                   value={newDriverData.email}
                   onChange={(e) => setNewDriverData(prev => ({...prev, email: e.target.value}))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="driver-password">Password *</Label>
+                <Input
+                  id="driver-password"
+                  type="password"
+                  placeholder="Minimo 8 caratteri"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
                 />
               </div>
 
@@ -241,25 +270,25 @@ const DriverRegistration = ({ onBack }: DriverRegistrationProps) => {
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="license-number">Numero Patente</Label>
-                <Input
-                  id="license-number"
-                  placeholder="IT123456789"
-                  value={newDriverData.licenseNumber}
-                  onChange={(e) => setNewDriverData(prev => ({...prev, licenseNumber: e.target.value}))}
-                />
-              </div>
+              {userOrganizations.length > 1 && (
+                <div>
+                  <Label>Organizzazione</Label>
+                  <Select value={orgId} onValueChange={(v) => setOrgId(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona organizzazione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Predefinita</SelectItem>
+                      {userOrganizations.map((uo) => (
+                        <SelectItem key={uo.organization_id} value={uo.organization_id}>
+                          {uo.organization?.name || uo.organization_id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              <div>
-                <Label htmlFor="company">Azienda</Label>
-                <Input
-                  id="company"
-                  placeholder="Nome azienda"
-                  value={newDriverData.company}
-                  onChange={(e) => setNewDriverData(prev => ({...prev, company: e.target.value}))}
-                />
-              </div>
             </div>
 
             <Button 

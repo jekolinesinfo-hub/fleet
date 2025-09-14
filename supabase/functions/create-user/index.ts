@@ -23,7 +23,7 @@ serve(async (req) => {
       });
     }
 
-    const { email, password, full_name, role = "fleet_manager", organization_id } = await req.json();
+    const { email, password, full_name, role = "driver", organization_id } = await req.json();
 
     if (!email || !password || !full_name) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -34,12 +34,67 @@ serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const PUBLISHABLE_KEY = Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
 
-    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !PUBLISHABLE_KEY) {
       return new Response(JSON.stringify({ error: "Missing Supabase credentials" }), {
         status: 500,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
+    }
+
+    // Validate caller auth & role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    const supabaseAuth = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: userResp, error: userErr } = await supabaseAuth.auth.getUser();
+    if (userErr || !userResp?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    // Get caller role and organizations
+    const { data: callerRole } = await supabaseAuth.rpc("get_current_user_role");
+    const { data: callerOrgIds } = await supabaseAuth.rpc("get_user_organization_ids");
+
+    if (callerRole !== 'admin' && callerRole !== 'fleet_manager') {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    // Only admins can create admins; fleet managers can create only drivers
+    const requestedRole = ["admin","fleet_manager","driver"].includes(role) ? role : "driver";
+    if (callerRole === 'fleet_manager' && requestedRole !== 'driver') {
+      return new Response(JSON.stringify({ error: "Fleet managers can only create drivers" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    // Resolve target organization
+    let targetOrgId = organization_id as string | undefined;
+    if (callerRole === 'fleet_manager') {
+      const allowed = Array.isArray(callerOrgIds) ? callerOrgIds : [];
+      if (!targetOrgId) targetOrgId = allowed[0];
+      if (!targetOrgId || !allowed.includes(targetOrgId)) {
+        return new Response(JSON.stringify({ error: "Invalid organization" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
     }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -77,11 +132,10 @@ serve(async (req) => {
     }
 
     // 3) Assign role
-    const allowedRoles = ["admin", "fleet_manager", "driver"] as const;
-    const finalRole = allowedRoles.includes(role) ? role : "fleet_manager";
+    const finalRole = requestedRole as any;
     const { error: roleError } = await supabase.from("user_roles").insert({
       user_id: userId,
-      role: finalRole as any,
+      role: finalRole,
     });
     if (roleError) {
       return new Response(JSON.stringify({ error: roleError.message }), {
@@ -91,10 +145,10 @@ serve(async (req) => {
     }
 
     // 4) Optional: add to organization
-    if (organization_id && typeof organization_id === "string") {
+    if (targetOrgId) {
       const { error: orgError } = await supabase.from("user_organizations").insert({
         user_id: userId,
-        organization_id,
+        organization_id: targetOrgId,
       });
       if (orgError) {
         return new Response(JSON.stringify({ error: orgError.message }), {

@@ -14,7 +14,7 @@ import { Activity, Users, AlertTriangle, MapPin, UserPlus, ArrowLeft, Settings, 
 import { Link } from "react-router-dom";
 
 const FleetDashboard = () => {
-  const { signOut, profile, isAdmin } = useAuth();
+  const { signOut, profile, isAdmin, isFleetManager } = useAuth();
   const { drivers, vehicles, getActiveDrivers, loading } = useFleetData();
   const { t } = useTranslation();
   const [activeView, setActiveView] = useState<'dashboard' | 'driver' | 'registration'>('dashboard');
