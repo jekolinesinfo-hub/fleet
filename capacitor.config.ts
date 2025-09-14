@@ -5,10 +5,6 @@ const config: CapacitorConfig = {
   appName: 'fleet',
   webDir: 'dist',
   bundledWebRuntime: false,
-  server: {
-    url: "https://fleet-7g74ryxnh-nurchi-micheles-projects.vercel.app",
-    cleartext: true
-  }
 };
 
 export default config;
