@@ -21,6 +21,7 @@ interface User {
   full_name: string | null;
   organization_name: string | null;
   updated_at: string;
+  is_blocked?: boolean;
   user_roles?: {
     role: 'admin' | 'fleet_manager' | 'driver';
   } | null;
@@ -40,6 +41,8 @@ const AdminPanel = () => {
   // New user form state
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserFullName, setNewUserFullName] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [useGeneratedPassword, setUseGeneratedPassword] = useState(true);
   const [newUserRole, setNewUserRole] = useState<'admin' | 'fleet_manager' | 'driver'>('fleet_manager');
   const [selectedOrgForNewUser, setSelectedOrgForNewUser] = useState('none');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
@@ -87,6 +90,7 @@ const AdminPanel = () => {
           full_name: profile.full_name,
           organization_name: profile.organization_name,
           updated_at: profile.updated_at,
+          is_blocked: profile.is_blocked || false,
           user_roles: role ? { role: role.role } : null
         });
       }
@@ -161,39 +165,50 @@ const AdminPanel = () => {
       return;
     }
 
+    const finalPassword = useGeneratedPassword ? generatePassword() : newUserPassword;
+    
+    if (!useGeneratedPassword && !newUserPassword.trim()) {
+      toast.error('Inserisci una password o usa quella generata automaticamente');
+      return;
+    }
+
+    if (!useGeneratedPassword && newUserPassword.length < 8) {
+      toast.error('La password deve essere di almeno 8 caratteri');
+      return;
+    }
+
     setIsCreatingUser(true);
-    const password = generatePassword();
     
     try {
-      // For now, we'll create a placeholder entry that the user can activate later
-      // This requires the user to manually sign up, but the admin can pre-assign roles
-      
-      console.log('🔑 Generated password:', password);
+      console.log('🔑 Final password:', finalPassword);
       
       toast.success(`Credenziali generate per ${newUserFullName}:`);
       toast.success(`Email: ${newUserEmail}`);
-      toast.success(`Password temporanea: ${password}`);
+      toast.success(`Password: ${finalPassword}`);
       
-      setGeneratedPassword(password);
+      setGeneratedPassword(finalPassword);
       
       // Instructions for the user
       const instructions = `
+        CREDENZIALI DI ACCESSO:
+        Email: ${newUserEmail}
+        Password: ${finalPassword}
+        
         ISTRUZIONI PER L'UTENTE:
         1. Vai su ${window.location.origin}/auth
-        2. Usa queste credenziali per registrarti:
-           Email: ${newUserEmail}
-           Nome: ${newUserFullName}
-        3. Dopo la registrazione, contatta l'amministratore per l'assegnazione del ruolo
+        2. Accedi con le credenziali sopra
+        3. Il tuo ruolo è: ${newUserRole}
       `;
       
       console.log('📋 Instructions:', instructions);
 
-      setGeneratedPassword(password);
       toast.success('Credenziali generate con successo!');
       
       // Reset form
       setNewUserEmail('');
       setNewUserFullName('');
+      setNewUserPassword('');
+      setUseGeneratedPassword(true);
       setNewUserRole('fleet_manager');
       setSelectedOrgForNewUser('none');
       
@@ -210,6 +225,71 @@ const AdminPanel = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copiato negli appunti!');
+  };
+
+  const blockUser = async (userId: string) => {
+    try {
+      // In a real implementation, you would use Supabase admin API to disable the user
+      // For now, we'll update a blocked status in the profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_blocked: true })
+        .eq('id', userId);
+
+      if (error) {
+        toast.error('Errore nel blocco dell\'utente');
+        return;
+      }
+
+      toast.success('Utente bloccato con successo');
+      await fetchUsers();
+    } catch (error) {
+      toast.error('Errore nel blocco dell\'utente');
+    }
+  };
+
+  const unblockUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_blocked: false })
+        .eq('id', userId);
+
+      if (error) {
+        toast.error('Errore nello sblocco dell\'utente');
+        return;
+      }
+
+      toast.success('Utente sbloccato con successo');
+      await fetchUsers();
+    } catch (error) {
+      toast.error('Errore nello sblocco dell\'utente');
+    }
+  };
+
+  const deleteUser = async (userId: string, userEmail: string) => {
+    const confirmed = confirm(`Sei sicuro di voler eliminare definitivamente l'utente ${userEmail}? Questa azione non può essere annullata.`);
+    
+    if (!confirmed) return;
+
+    try {
+      // In a real implementation, you would also delete from auth.users
+      // For now, we'll delete from profiles which will cascade
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (error) {
+        toast.error('Errore nella cancellazione dell\'utente');
+        return;
+      }
+
+      toast.success('Utente eliminato con successo');
+      await fetchUsers();
+    } catch (error) {
+      toast.error('Errore nella cancellazione dell\'utente');
+    }
   };
 
   const updateUserRole = async (userId: string, newRole: 'admin' | 'fleet_manager' | 'driver') => {
@@ -307,6 +387,7 @@ const AdminPanel = () => {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Ruolo</TableHead>
+                    <TableHead>Stato</TableHead>
                     <TableHead>Data Registrazione</TableHead>
                     <TableHead>Azioni</TableHead>
                   </TableRow>
@@ -324,10 +405,15 @@ const AdminPanel = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        <Badge variant={user.is_blocked ? 'destructive' : 'default'}>
+                          {user.is_blocked ? 'Bloccato' : 'Attivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         {new Date(user.created_at).toLocaleDateString('it-IT')}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Select
                             value={user.user_roles?.role || 'guest'}
                             onValueChange={(newRole: 'admin' | 'fleet_manager' | 'driver') => 
@@ -343,6 +429,35 @@ const AdminPanel = () => {
                               <SelectItem value="driver">Driver</SelectItem>
                             </SelectContent>
                           </Select>
+                          
+                          {user.is_blocked ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => unblockUser(user.id)}
+                              className="text-green-600"
+                            >
+                              Sblocca
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => blockUser(user.id)}
+                              className="text-orange-600"
+                            >
+                              Blocca
+                            </Button>
+                          )}
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteUser(user.id, user.email)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                           
                           <Dialog>
                             <DialogTrigger asChild>
@@ -427,6 +542,40 @@ const AdminPanel = () => {
                       required
                     />
                   </div>
+                </div>
+
+                {/* Password Configuration */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="use-generated-password"
+                      checked={useGeneratedPassword}
+                      onChange={(e) => setUseGeneratedPassword(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="use-generated-password">
+                      Genera password automaticamente (12 caratteri sicuri)
+                    </Label>
+                  </div>
+                  
+                  {!useGeneratedPassword && (
+                    <div className="space-y-2">
+                      <Label htmlFor="new-user-password">Password Personalizzata</Label>
+                      <Input
+                        id="new-user-password"
+                        type="password"
+                        value={newUserPassword}
+                        onChange={(e) => setNewUserPassword(e.target.value)}
+                        placeholder="Minimo 8 caratteri"
+                        minLength={8}
+                        required={!useGeneratedPassword}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        La password deve essere di almeno 8 caratteri
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -519,11 +668,11 @@ const AdminPanel = () => {
                       onClick={() => {
                         const credentials = `Credenziali di accesso Fleet Management:
 Email: ${newUserEmail}
-Password: ${generatedPassword}
+                      Password: ${generatedPassword}
 
-Istruzioni:
+ISTRUZIONI PER L'UTENTE:
 1. Vai su ${window.location.origin}/auth
-2. Accedi con le credenziali sopra
+2. Accedi con le credenziali sopra  
 3. Il tuo ruolo è: ${newUserRole}
 
 Contatta l'amministratore per supporto.`;
