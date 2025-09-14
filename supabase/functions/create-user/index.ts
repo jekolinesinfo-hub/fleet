@@ -109,7 +109,11 @@ serve(async (req) => {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e?.message || "Unexpected error" }), {
+    console.error("Edge function error:", e);
+    return new Response(JSON.stringify({ 
+      error: e?.message || "Unexpected error",
+      details: e?.toString() || "Unknown error"
+    }), {
       status: 500,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });

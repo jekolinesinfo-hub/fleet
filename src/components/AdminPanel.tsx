@@ -202,8 +202,26 @@ const AdminPanel = () => {
 
       if (error) {
         console.error('❌ Edge function error:', error);
-        const message = (error as any)?.message || 'Errore nella creazione dell\'utente';
-        toast.error(message.includes('already registered') ? 'Email già registrata' : message);
+        let errorMsg = 'Errore nella creazione dell\'utente';
+        
+        // Try to get more specific error info
+        if (error && typeof error === 'object') {
+          if ('message' in error) {
+            errorMsg = error.message;
+          } else if ('error' in error) {
+            errorMsg = error.error;
+          }
+        }
+        
+        if (errorMsg.includes('already registered') || errorMsg.includes('User already registered')) {
+          toast.error('Email già registrata nel sistema');
+        } else if (errorMsg.includes('Missing Supabase credentials')) {
+          toast.error('Errore di configurazione del sistema');
+        } else if (errorMsg.includes('Missing required fields')) {
+          toast.error('Compila tutti i campi obbligatori');
+        } else {
+          toast.error(errorMsg);
+        }
         return;
       }
 
