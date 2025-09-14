@@ -47,6 +47,7 @@ const AdminPanel = () => {
   const [selectedOrgForNewUser, setSelectedOrgForNewUser] = useState('none');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
+  const [createdUserEmail, setCreatedUserEmail] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -161,7 +162,7 @@ const AdminPanel = () => {
   const createNewUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔧 DEBUG: Starting user creation process');
+    console.log('🔧 Starting user creation');
     console.log('📧 Email:', newUserEmail);
     console.log('👤 Name:', newUserFullName);
     console.log('🏷️ Role:', newUserRole);
@@ -185,45 +186,46 @@ const AdminPanel = () => {
     }
 
     setIsCreatingUser(true);
+    setGeneratedPassword('');
+    setCreatedUserEmail('');
     
     try {
-      console.log('🔑 Final password:', finalPassword);
-      
-      toast.success(`Credenziali generate per ${newUserFullName}:`);
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUserEmail.trim(),
+          password: finalPassword,
+          full_name: newUserFullName.trim(),
+          role: newUserRole,
+          organization_id: selectedOrgForNewUser !== 'none' ? selectedOrgForNewUser : undefined,
+        },
+      });
+
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        const message = (error as any)?.message || 'Errore nella creazione dell\'utente';
+        toast.error(message.includes('already registered') ? 'Email già registrata' : message);
+        return;
+      }
+
+      console.log('✅ User created', data);
+
+      setGeneratedPassword(finalPassword);
+      setCreatedUserEmail(newUserEmail.trim());
+
+      toast.success(`Utente creato: ${newUserFullName}`);
       toast.success(`Email: ${newUserEmail}`);
       toast.success(`Password: ${finalPassword}`);
-      
-      setGeneratedPassword(finalPassword);
-      
-      // Instructions for the user
-      const instructions = `
-        CREDENZIALI DI ACCESSO:
-        Email: ${newUserEmail}
-        Password: ${finalPassword}
-        
-        ISTRUZIONI PER L'UTENTE:
-        1. Vai su ${window.location.origin}/auth
-        2. Accedi con le credenziali sopra
-        3. Il tuo ruolo è: ${newUserRole}
-      `;
-      
-      console.log('📋 Instructions:', instructions);
 
-      toast.success('Credenziali generate con successo!');
-      
-      // Reset form
-      setNewUserEmail('');
-      setNewUserFullName('');
+      await fetchUsers();
+
+      // Reset form (manteniamo i campi visibili finché si copia)
       setNewUserPassword('');
-      setUseGeneratedPassword(true);
+      setUseGeneratedPassword(false);
       setNewUserRole('fleet_manager');
       setSelectedOrgForNewUser('none');
-      
-      console.log('✅ User creation process completed');
-      
-    } catch (error) {
-      console.error('❌ Create user error:', error);
-      toast.error('Errore nella generazione delle credenziali');
+    } catch (err: any) {
+      console.error('❌ Create user exception:', err);
+      toast.error(err?.message || 'Errore inatteso nella creazione utente');
     } finally {
       setIsCreatingUser(false);
     }
@@ -637,12 +639,12 @@ const AdminPanel = () => {
                       <div className="flex items-center justify-between p-3 bg-white rounded border">
                         <div>
                           <p className="font-medium text-sm text-gray-600">Email:</p>
-                          <p className="font-mono">{newUserEmail}</p>
+                          <p className="font-mono">{createdUserEmail}</p>
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(newUserEmail)}
+                          onClick={() => copyToClipboard(createdUserEmail)}
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
