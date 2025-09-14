@@ -86,39 +86,56 @@ export const useOrganizations = () => {
 
   const createOrganization = async (name: string) => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      console.log('🚀 Creating organization:', name);
       
+      const { data: userData } = await supabase.auth.getUser();
+      console.log('👤 User data:', userData);
+      
+      if (!userData.user?.id) {
+        toast.error('Utente non autenticato');
+        return { error: new Error('User not authenticated') };
+      }
+
+      console.log('📝 Inserting organization...');
       const { data, error } = await supabase
         .from('organizations')
         .insert([{ 
           name,
-          owner_id: userData.user?.id 
+          owner_id: userData.user.id 
         }])
         .select()
         .single();
 
+      console.log('✅ Insert result:', { data, error });
+
       if (error) {
+        console.error('❌ Insert error:', error);
         toast.error(`Errore nella creazione dell'organizzazione: ${error.message}`);
         return { error };
       }
 
+      console.log('🔗 Adding user to organization...');
       // Add creator to organization
       const { error: memberError } = await supabase
         .from('user_organizations')
         .insert([{
           organization_id: data.id,
-          user_id: userData.user?.id
+          user_id: userData.user.id
         }]);
 
       if (memberError) {
-        console.error('Error adding creator to organization:', memberError);
+        console.error('❌ Error adding creator to organization:', memberError);
+      } else {
+        console.log('✅ User added to organization successfully');
       }
 
+      console.log('🔄 Refreshing data...');
       await fetchOrganizations();
       await fetchUserOrganizations();
       toast.success('Organizzazione creata con successo!');
       return { data, error: null };
     } catch (error) {
+      console.error('❌ Unexpected error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Errore durante la creazione dell\'organizzazione';
       toast.error(errorMessage);
       return { error: new Error(errorMessage) };
