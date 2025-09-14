@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      driver_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_name: string | null
+          driver_id: string
+          id: string
+          is_active: boolean | null
+          last_seen: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_name?: string | null
+          driver_id: string
+          id?: string
+          is_active?: boolean | null
+          last_seen?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_name?: string | null
+          driver_id?: string
+          id?: string
+          is_active?: boolean | null
+          last_seen?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gps_tracking: {
+        Row: {
+          accuracy: number | null
+          altitude: number | null
+          battery_level: number | null
+          created_at: string
+          device_id: string
+          driver_id: string
+          heading: number | null
+          id: string
+          is_moving: boolean | null
+          latitude: number
+          longitude: number
+          speed: number | null
+          timestamp: string
+        }
+        Insert: {
+          accuracy?: number | null
+          altitude?: number | null
+          battery_level?: number | null
+          created_at?: string
+          device_id: string
+          driver_id: string
+          heading?: number | null
+          id?: string
+          is_moving?: boolean | null
+          latitude: number
+          longitude: number
+          speed?: number | null
+          timestamp?: string
+        }
+        Update: {
+          accuracy?: number | null
+          altitude?: number | null
+          battery_level?: number | null
+          created_at?: string
+          device_id?: string
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          is_moving?: boolean | null
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+          timestamp?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

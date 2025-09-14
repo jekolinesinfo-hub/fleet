@@ -1,70 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Truck, AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-
-// Mock data per i veicoli sulla mappa con coordinate reali
-const mockVehicles = [
-  { 
-    id: "V001", 
-    driver: "Marco Rossi", 
-    type: "Camion", 
-    status: "driving", 
-    coordinates: [12.4964, 41.9028], // Roma
-    lastUpdate: "2 min fa"
-  },
-  { 
-    id: "V002", 
-    driver: "Luca Bianchi", 
-    type: "Furgone", 
-    status: "resting", 
-    coordinates: [9.1900, 45.4642], // Milano
-    lastUpdate: "5 min fa"
-  },
-  { 
-    id: "V003", 
-    driver: "Anna Verde", 
-    type: "Taxi", 
-    status: "alert", 
-    coordinates: [11.2558, 43.7696], // Firenze
-    lastUpdate: "1 min fa"
-  },
-  { 
-    id: "V004", 
-    driver: "Giuseppe Neri", 
-    type: "Camion", 
-    status: "driving", 
-    coordinates: [14.2681, 40.8518], // Napoli
-    lastUpdate: "3 min fa"
-  },
-];
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'driving':
-      return 'text-success bg-success/10 border-success/20';
-    case 'resting':
-      return 'text-warning bg-warning/10 border-warning/20';
-    case 'alert':
-      return 'text-alert bg-alert/10 border-alert/20 animate-pulse';
-    default:
-      return 'text-muted-foreground bg-muted/10 border-border';
-  }
-};
-
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'driving':
-      return <Truck className="h-4 w-4" />;
-    case 'resting':
-      return <MapPin className="h-4 w-4" />;
-    case 'alert':
-      return <AlertCircle className="h-4 w-4" />;
-    default:
-      return <MapPin className="h-4 w-4" />;
-  }
-};
+import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
 
 interface FleetMapProps {
   selectedDriverId?: string | null;
@@ -75,6 +12,9 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
   const map = useRef<L.Map | null>(null);
   const markers = useRef<{ [key: string]: L.Marker }>({});
   const [isMapReady, setIsMapReady] = useState(false);
+  
+  // Hook per dati GPS real-time
+  const { gpsData, devices, isLoading, getActiveDrivers, getLatestPositionForDriver } = useRealTimeGPS();
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -106,20 +46,68 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
     };
   }, []);
 
+  // Effetto per aggiornare marker quando cambiano i dati GPS
+  useEffect(() => {
+    if (isMapReady) {
+      addVehicleMarkers();
+    }
+  }, [isMapReady, gpsData, devices]);
+
   useEffect(() => {
     if (isMapReady && selectedDriverId && map.current) {
-      const vehicle = mockVehicles.find(v => v.id === selectedDriverId);
-      if (vehicle) {
-        map.current.setView(vehicle.coordinates as [number, number], 14);
+      const driverPosition = getLatestPositionForDriver(selectedDriverId);
+      if (driverPosition) {
+        map.current.setView([driverPosition.latitude, driverPosition.longitude], 14);
       }
     }
-  }, [selectedDriverId, isMapReady]);
+  }, [selectedDriverId, isMapReady, getLatestPositionForDriver]);
+
+  // Funzione per determinare lo status del driver
+  const getDriverStatus = (position: any, device: any) => {
+    if (!device || !device.is_active) return 'offline';
+    
+    // Verifica se ci sono condizioni di alert (velocità eccessiva, batteria bassa, etc.)
+    const hasAlert = (position.speed && position.speed > 30) || // > 108 km/h
+                    (position.battery_level && position.battery_level < 20);
+    
+    if (hasAlert) return 'alert';
+    if (position.is_moving) return 'driving';
+    return 'resting';
+  };
+
+  // Funzione per ottenere il colore dello status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'driving':
+        return 'hsl(142, 76%, 36%)'; // Verde
+      case 'resting':
+        return 'hsl(48, 96%, 53%)';  // Giallo
+      case 'offline':
+        return 'hsl(0, 0%, 60%)';    // Grigio
+      case 'alert':
+        return 'hsl(0, 84%, 60%)';   // Rosso
+      default:
+        return 'hsl(0, 0%, 60%)';
+    }
+  };
 
   const addVehicleMarkers = () => {
-    if (!map.current) return;
+    if (!map.current || isLoading) return;
 
-    mockVehicles.forEach((vehicle) => {
-      // Crea icona personalizzata per ogni veicolo
+    // Rimuovi marker esistenti
+    Object.values(markers.current).forEach(marker => {
+      map.current?.removeLayer(marker);
+    });
+    markers.current = {};
+
+    const activeDrivers = getActiveDrivers();
+    console.log('📍 Aggiornamento marker per', activeDrivers.length, 'driver');
+
+    activeDrivers.forEach(({ driverId, position, device }) => {
+      const status = getDriverStatus(position, device);
+      const color = getStatusColor(status);
+      
+      // Crea icona personalizzata per ogni driver
       const iconHtml = `
         <div style="
           width: 40px;
@@ -132,11 +120,10 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
           justify-content: center;
           cursor: pointer;
           font-size: 16px;
-          ${vehicle.status === 'driving' ? 'background: hsl(142, 76%, 36%);' : ''}
-          ${vehicle.status === 'resting' ? 'background: hsl(48, 96%, 53%);' : ''}
-          ${vehicle.status === 'alert' ? 'background: hsl(0, 84%, 60%); animation: pulse 2s infinite;' : ''}
+          background: ${color};
+          ${status === 'alert' ? 'animation: pulse 2s infinite;' : ''}
         ">
-          ${vehicle.status === 'driving' ? '🚛' : vehicle.status === 'resting' ? '⏸️' : '⚠️'}
+          ${status === 'driving' ? '🚛' : status === 'resting' ? '⏸️' : status === 'offline' ? '📱' : '⚠️'}
         </div>
       `;
 
@@ -147,21 +134,27 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
         iconAnchor: [20, 20]
       });
 
+      const speedKmh = position.speed ? Math.round(position.speed * 3.6) : 0;
+      const lastUpdate = new Date(position.timestamp).toLocaleString('it-IT');
+
       const popupContent = `
         <div class="p-2">
-          <div class="font-semibold">${vehicle.driver}</div>
-          <div class="text-xs text-gray-600">ID: ${vehicle.id}</div>
-          <div class="text-xs text-gray-600">Tipo: ${vehicle.type}</div>
-          <div class="text-xs text-gray-600">Aggiornato: ${vehicle.lastUpdate}</div>
-          ${vehicle.status === 'alert' ? '<div class="text-xs text-red-600 font-medium mt-1">⚠️ Violazione normative</div>' : ''}
+          <div class="font-semibold">Driver ${driverId}</div>
+          <div class="text-xs text-gray-600">Status: ${status}</div>
+          <div class="text-xs text-gray-600">Velocità: ${speedKmh} km/h</div>
+          <div class="text-xs text-gray-600">Precisione: ${position.accuracy?.toFixed(1)}m</div>
+          <div class="text-xs text-gray-600">Aggiornato: ${lastUpdate}</div>
+          <div class="text-xs text-gray-600 mt-1">
+            📍 ${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}
+          </div>
         </div>
       `;
 
-      const marker = L.marker(vehicle.coordinates as [number, number], { icon: customIcon })
+      const marker = L.marker([position.latitude, position.longitude], { icon: customIcon })
         .addTo(map.current!)
         .bindPopup(popupContent);
 
-      markers.current[vehicle.id] = marker;
+      markers.current[driverId] = marker;
     });
   };
 
@@ -191,12 +184,12 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
 
       {/* Contatore Real-time */}
       <div className="absolute top-4 right-4 bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-card z-10">
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-          <span className="text-xs font-medium">Live GPS Tracking</span>
-        </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+            <span className="text-xs font-medium">Live GPS Tracking</span>
+          </div>
         <div className="text-xs text-muted-foreground mt-1">
-          {mockVehicles.length} veicoli monitorati
+          {isLoading ? 'Caricamento...' : `${getActiveDrivers().length} veicoli monitorati`}
         </div>
       </div>
     </div>
