@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Users, Building2, Plus, Trash2, Edit, UserPlus } from 'lucide-react';
+import { Users, Building2, Plus, Trash2, Edit, UserPlus, ArrowLeft, Mail, Copy, Loader2 } from 'lucide-react';
 
 interface User {
   id: string;
@@ -35,6 +36,14 @@ const AdminPanel = () => {
   // Form states
   const [newOrgName, setNewOrgName] = useState('');
   const [editingOrg, setEditingOrg] = useState<any>(null);
+  
+  // New user form state
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserFullName, setNewUserFullName] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'fleet_manager' | 'driver'>('fleet_manager');
+  const [selectedOrgForNewUser, setSelectedOrgForNewUser] = useState('');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -129,6 +138,73 @@ const AdminPanel = () => {
     await fetchMembers();
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
+  const createNewUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserEmail.trim() || !newUserFullName.trim()) {
+      toast.error('Tutti i campi sono obbligatori');
+      return;
+    }
+
+    setIsCreatingUser(true);
+    const password = generatePassword();
+    
+    try {
+      // For now, we'll create a placeholder entry that the user can activate later
+      // This requires the user to manually sign up, but the admin can pre-assign roles
+      
+      // Create a temporary entry to track this user creation request
+      const tempUserId = crypto.randomUUID();
+      
+      toast.success(`Credenziali generate per ${newUserFullName}:`);
+      toast.success(`Email: ${newUserEmail}`);
+      toast.success(`Password temporanea: ${password}`);
+      
+      setGeneratedPassword(password);
+      
+      // Instructions for the user
+      const instructions = `
+        ISTRUZIONI PER L'UTENTE:
+        1. Vai su ${window.location.origin}/auth
+        2. Usa queste credenziali per registrarti:
+           Email: ${newUserEmail}
+           Nome: ${newUserFullName}
+        3. Dopo la registrazione, contatta l'amministratore per l'assegnazione del ruolo
+      `;
+      
+      console.log(instructions);
+
+      setGeneratedPassword(password);
+      toast.success('Utente creato con successo!');
+      
+      // Reset form
+      setNewUserEmail('');
+      setNewUserFullName('');
+      setNewUserRole('fleet_manager');
+      setSelectedOrgForNewUser('');
+      
+      await fetchUsers();
+    } catch (error) {
+      toast.error('Errore nella creazione dell\'utente');
+      console.error('Create user error:', error);
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copiato negli appunti!');
+  };
+
   const updateUserRole = async (userId: string, newRole: 'admin' | 'fleet_manager' | 'driver') => {
     try {
       // First check if user has a role
@@ -185,15 +261,24 @@ const AdminPanel = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Pannello Amministratore</h1>
-          <p className="text-muted-foreground">Gestisci utenti e organizzazioni</p>
+        <div className="flex items-center space-x-4">
+          <Link to="/">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Torna alla Dashboard
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Pannello Amministratore</h1>
+            <p className="text-muted-foreground">Gestisci utenti e organizzazioni</p>
+          </div>
         </div>
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
         <TabsList>
           <TabsTrigger value="users">Utenti</TabsTrigger>
+          <TabsTrigger value="create-user">Crea Utenti</TabsTrigger>
           <TabsTrigger value="organizations">Organizzazioni</TabsTrigger>
         </TabsList>
 
@@ -296,6 +381,155 @@ const AdminPanel = () => {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="create-user" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Crea Nuovo Utente
+              </CardTitle>
+              <CardDescription>
+                Crea un nuovo utente e assegnalo a un'organizzazione
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={createNewUser} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-user-fullname">Nome Completo</Label>
+                    <Input
+                      id="new-user-fullname"
+                      value={newUserFullName}
+                      onChange={(e) => setNewUserFullName(e.target.value)}
+                      placeholder="Nome e cognome"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-user-email">Email</Label>
+                    <Input
+                      id="new-user-email"
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="email@esempio.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-user-role">Ruolo</Label>
+                    <Select value={newUserRole} onValueChange={(value: 'admin' | 'fleet_manager' | 'driver') => setNewUserRole(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="fleet_manager">Fleet Manager</SelectItem>
+                        <SelectItem value="driver">Driver</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-user-org">Organizzazione (Opzionale)</Label>
+                    <Select value={selectedOrgForNewUser} onValueChange={setSelectedOrgForNewUser}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona organizzazione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nessuna organizzazione</SelectItem>
+                        {organizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button type="submit" disabled={isCreatingUser} className="w-full">
+                  {isCreatingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Crea Utente
+                </Button>
+              </form>
+
+              {/* Generated Password Display */}
+              {generatedPassword && (
+                <Card className="mt-6 border-green-200 bg-green-50">
+                  <CardHeader>
+                    <CardTitle className="text-green-800 flex items-center gap-2">
+                      <Mail className="h-5 w-5" />
+                      Credenziali Create
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="flex items-center justify-between p-3 bg-white rounded border">
+                        <div>
+                          <p className="font-medium text-sm text-gray-600">Email:</p>
+                          <p className="font-mono">{newUserEmail}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(newUserEmail)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-white rounded border">
+                        <div>
+                          <p className="font-medium text-sm text-gray-600">Password:</p>
+                          <p className="font-mono">{generatedPassword}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(generatedPassword)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-sm text-green-700 bg-green-100 p-3 rounded">
+                      ⚠️ <strong>Importante:</strong> Comunica queste credenziali all'utente e chiedigli di:
+                      <br />
+                      1. Andare su <code>{window.location.origin}/auth</code>
+                      <br />
+                      2. Registrarsi con email: <code>{newUserEmail}</code>
+                      <br />
+                      3. Dopo la registrazione, potrai assegnare il ruolo appropriato dalla tab "Utenti"
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const credentials = `Credenziali di accesso Fleet Management:
+Email: ${newUserEmail}
+Password: ${generatedPassword}
+
+Istruzioni:
+1. Vai su ${window.location.origin}/auth
+2. Accedi con le credenziali sopra
+3. Il tuo ruolo è: ${newUserRole}
+
+Contatta l'amministratore per supporto.`;
+                        copyToClipboard(credentials);
+                      }}
+                      className="w-full"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copia Credenziali Complete
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

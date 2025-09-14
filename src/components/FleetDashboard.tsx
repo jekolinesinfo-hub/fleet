@@ -85,14 +85,16 @@ const FleetDashboard = () => {
                 </Link>
               )}
               
-              <Button
-                onClick={() => setActiveView('registration')}
-                variant="outline"
-                size="sm"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Registra Driver
-              </Button>
+              {isAdmin && (
+                <Button
+                  onClick={() => setActiveView('registration')}
+                  variant="outline"
+                  size="sm"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Registra Driver
+                </Button>
+              )}
               
               <Button
                 onClick={signOut}
