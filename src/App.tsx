@@ -13,8 +13,23 @@ import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { FleetConfigProvider } from "@/contexts/FleetConfigContext";
+import { Capacitor } from "@capacitor/core";
+import DriverDashboard from "@/components/DriverDashboard";
 
 const queryClient = new QueryClient();
+
+// Auto-redirect component for root path
+const AutoRedirect = () => {
+  const isNative = Capacitor.isNativePlatform();
+  
+  if (isNative) {
+    // App nativa -> Driver Dashboard
+    return <Navigate to="/driver-dashboard" replace />;
+  } else {
+    // Web -> Fleet Dashboard (protetto)
+    return <Navigate to="/dashboard" replace />;
+  }
+};
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
@@ -49,8 +64,9 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<DriverApp />} />
+              <Route path="/" element={<AutoRedirect />} />
               <Route path="/driver" element={<DriverApp />} />
+              <Route path="/driver-dashboard" element={<DriverDashboard />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Index />
