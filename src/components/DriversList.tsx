@@ -76,6 +76,12 @@ const mockDrivers = [
 interface DriversListProps {
   onDriverSelect: (driverId: string) => void;
   onDriverTrack: (driverId: string) => void;
+  driversData?: Array<{
+    driver: { id: string; name: string; email: string };
+    position: any;
+    vehicle?: any;
+  }>;
+  loading?: boolean;
 }
 
 const getStatusInfo = (status: string) => {
@@ -113,7 +119,29 @@ const getStatusInfo = (status: string) => {
   }
 };
 
-const DriversList = ({ onDriverSelect, onDriverTrack }: DriversListProps) => {
+const DriversList = ({ onDriverSelect, onDriverTrack, driversData = [], loading = false }: DriversListProps) => {
+  // Use real data if provided, otherwise fall back to mock data
+  const drivers = driversData.length > 0 ? driversData.map(({ driver, position, vehicle }) => ({
+    id: driver.id,
+    name: driver.name,
+    vehicleId: vehicle?.device_id || 'N/A',
+    vehicleType: vehicle?.type || 'Vehicle',
+    status: getDriverStatusFromPosition(position),
+    location: `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`,
+    drivingTime: getDrivingTime(position),
+    restTime: getRestTime(position),
+    violations: 0, // TODO: Calculate from speed violations
+    phone: driver.email,
+    lastUpdate: getLastUpdate(position.timestamp)
+  })) : mockDrivers;
+
+  if (loading) {
+    return (
+      <div className="space-y-2 p-4 max-h-[400px] overflow-y-auto">
+        <div className="text-center text-muted-foreground">Caricamento dati flotta...</div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-2 p-4 max-h-[400px] overflow-y-auto">
       {mockDrivers.map((driver) => {
@@ -228,6 +256,39 @@ const DriversList = ({ onDriverSelect, onDriverTrack }: DriversListProps) => {
       })}
     </div>
   );
+};
+
+// Helper functions for data transformation
+const getDriverStatusFromPosition = (position: any): string => {
+  if (!position) return 'offline';
+  
+  const hasAlert = (position.speed && position.speed > 30) || 
+                  (position.battery_level && position.battery_level < 20);
+  
+  if (hasAlert) return 'alert';
+  if (position.is_moving) return 'driving';
+  return 'resting';
+};
+
+const getDrivingTime = (position: any): string => {
+  // This would need historical data to calculate properly
+  return position?.is_moving ? '2h 30m' : '0h 0m';
+};
+
+const getRestTime = (position: any): string => {
+  // This would need historical data to calculate properly
+  return position?.is_moving ? '6h 30m rimanenti' : '8h 00m';
+};
+
+const getLastUpdate = (timestamp: string): string => {
+  const now = new Date();
+  const updateTime = new Date(timestamp);
+  const diffMinutes = Math.floor((now.getTime() - updateTime.getTime()) / (1000 * 60));
+  
+  if (diffMinutes < 1) return 'Ora';
+  if (diffMinutes < 60) return `${diffMinutes} min fa`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  return `${diffHours}h ${diffMinutes % 60}m fa`;
 };
 
 export default DriversList;

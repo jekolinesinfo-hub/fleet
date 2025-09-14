@@ -10,6 +10,7 @@ interface Profile {
   organization_name: string | null;
   created_at: string;
   updated_at: string;
+  is_blocked?: boolean;
 }
 
 interface UserRole {

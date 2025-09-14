@@ -90,7 +90,7 @@ const AdminPanel = () => {
           full_name: profile.full_name,
           organization_name: profile.organization_name,
           updated_at: profile.updated_at,
-          is_blocked: profile.is_blocked || false,
+          is_blocked: (profile as any).is_blocked || false,
           user_roles: role ? { role: role.role } : null
         });
       }
@@ -233,7 +233,7 @@ const AdminPanel = () => {
       // For now, we'll update a blocked status in the profiles table
       const { error } = await supabase
         .from('profiles')
-        .update({ is_blocked: true })
+        .update({ is_blocked: true } as any)
         .eq('id', userId);
 
       if (error) {
@@ -252,7 +252,7 @@ const AdminPanel = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ is_blocked: false })
+        .update({ is_blocked: false } as any)
         .eq('id', userId);
 
       if (error) {

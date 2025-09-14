@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useFleetData } from "@/hooks/useFleetData";
+import { useAuth } from "@/hooks/useAuth";
 
 // Mock data dettagliata per un conducente
 const mockDriverDetails = {

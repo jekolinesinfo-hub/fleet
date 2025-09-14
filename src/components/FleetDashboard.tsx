@@ -7,22 +7,29 @@ import DriverDetails from "./DriverDetails";
 import DriverRegistration from "./DriverRegistration";
 import AlertCenter from "./AlertCenter";
 import { useAuth } from "@/hooks/useAuth";
+import { useFleetData } from "@/hooks/useFleetData";
 import { Activity, Users, AlertTriangle, MapPin, UserPlus, ArrowLeft, Settings, LogOut, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Mock data
-const mockStats = {
-  totalVehicles: 47,
-  activeDrivers: 32,
-  activeAlerts: 3,
-  totalDistance: "2,847 km"
-};
-
 const FleetDashboard = () => {
   const { signOut, profile, isAdmin } = useAuth();
+  const { drivers, vehicles, getActiveDrivers, loading } = useFleetData();
   const [activeView, setActiveView] = useState<'dashboard' | 'driver' | 'registration'>('dashboard');
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [trackedDriverId, setTrackedDriverId] = useState<string | null>(null);
+
+  const activeDriversData = getActiveDrivers();
+  
+  // Calculate real stats from user's fleet data
+  const stats = {
+    totalVehicles: vehicles.length,
+    activeDrivers: activeDriversData.length,
+    activeAlerts: activeDriversData.filter(({ position }) => 
+      (position.speed && position.speed > 30) || // > 108 km/h
+      (position.battery_level && position.battery_level < 20)
+    ).length,
+    totalDistance: "N/A" // Would need calculation from historical data
+  };
 
   const handleDriverSelect = (driverId: string) => {
     setSelectedDriverId(driverId);
@@ -121,7 +128,7 @@ const FleetDashboard = () => {
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockStats.totalVehicles}</div>
+                  <div className="text-2xl font-bold">{stats.totalVehicles}</div>
                 </CardContent>
               </Card>
               
@@ -131,7 +138,7 @@ const FleetDashboard = () => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockStats.activeDrivers}</div>
+                  <div className="text-2xl font-bold">{stats.activeDrivers}</div>
                 </CardContent>
               </Card>
               
@@ -141,7 +148,7 @@ const FleetDashboard = () => {
                   <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockStats.activeAlerts}</div>
+                  <div className="text-2xl font-bold">{stats.activeAlerts}</div>
                 </CardContent>
               </Card>
               
@@ -151,7 +158,7 @@ const FleetDashboard = () => {
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockStats.totalDistance}</div>
+                  <div className="text-2xl font-bold">{stats.totalDistance}</div>
                 </CardContent>
               </Card>
             </div>
@@ -183,6 +190,8 @@ const FleetDashboard = () => {
                   <DriversList 
                     onDriverSelect={handleDriverSelect}
                     onDriverTrack={handleDriverTrack}
+                    driversData={activeDriversData}
+                    loading={loading}
                   />
                 </CardContent>
               </Card>

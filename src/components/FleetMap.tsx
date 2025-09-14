@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useRealTimeGPS } from "@/hooks/useRealTimeGPS";
+import { useFleetData } from "@/hooks/useFleetData";
 
 interface FleetMapProps {
   selectedDriverId?: string | null;
@@ -14,8 +14,8 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
   const markers = useRef<{ [key: string]: L.Marker }>({});
   const [isMapReady, setIsMapReady] = useState(false);
   
-  // Hook per dati GPS real-time
-  const { gpsData, devices, isLoading, getActiveDrivers, getLatestPositionForDriver } = useRealTimeGPS();
+  // Hook per dati GPS real-time con isolamento flotta
+  const { getActiveDrivers, getLatestPositionForDriver, loading } = useFleetData();
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -52,7 +52,7 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
     if (isMapReady) {
       addVehicleMarkers();
     }
-  }, [isMapReady, gpsData, devices]);
+  }, [isMapReady, getActiveDrivers]);
 
   // Effetto per zoomare sul driver tracciato
   useEffect(() => {
@@ -93,8 +93,8 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
   }, [selectedDriverId, isMapReady, getLatestPositionForDriver]);
 
   // Funzione per determinare lo status del driver
-  const getDriverStatus = (position: any, device: any) => {
-    if (!device || !device.is_active) return 'offline';
+  const getDriverStatus = (position: any, vehicle: any) => {
+    if (!vehicle || !vehicle.is_active) return 'offline';
     
     // Verifica se ci sono condizioni di alert (velocità eccessiva, batteria bassa, etc.)
     const hasAlert = (position.speed && position.speed > 30) || // > 108 km/h
@@ -122,7 +122,7 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
   };
 
   const addVehicleMarkers = () => {
-    if (!map.current || isLoading) return;
+    if (!map.current || loading) return;
 
     // Rimuovi marker esistenti
     Object.values(markers.current).forEach(marker => {
@@ -130,11 +130,11 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
     });
     markers.current = {};
 
-    const activeDrivers = getActiveDrivers();
-    console.log('📍 Aggiornamento marker per', activeDrivers.length, 'driver');
+    const activeDriversData = getActiveDrivers();
+    console.log('📍 Aggiornamento marker per', activeDriversData.length, 'driver');
 
-    activeDrivers.forEach(({ driverId, position, device }) => {
-      const status = getDriverStatus(position, device);
+    activeDriversData.forEach(({ driver, position, vehicle }) => {
+      const status = getDriverStatus(position, vehicle);
       const color = getStatusColor(status);
       
       // Crea icona personalizzata per ogni driver
@@ -169,7 +169,7 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
 
       const popupContent = `
         <div class="p-2">
-          <div class="font-semibold">Driver ${driverId}</div>
+          <div class="font-semibold">${driver.name}</div>
           <div class="text-xs text-gray-600">Status: ${status}</div>
           <div class="text-xs text-gray-600">Velocità: ${speedKmh} km/h</div>
           <div class="text-xs text-gray-600">Precisione: ${position.accuracy?.toFixed(1)}m</div>
@@ -184,7 +184,7 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
         .addTo(map.current!)
         .bindPopup(popupContent);
 
-      markers.current[driverId] = marker;
+      markers.current[driver.id] = marker;
     });
   };
 
@@ -219,7 +219,7 @@ const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId, trackedDriverId }
             <span className="text-xs font-medium">Live GPS Tracking</span>
           </div>
         <div className="text-xs text-muted-foreground mt-1">
-          {isLoading ? 'Caricamento...' : `${getActiveDrivers().length} veicoli monitorati`}
+          {loading ? 'Caricamento...' : `${getActiveDrivers().length} veicoli monitorati`}
         </div>
       </div>
     </div>
