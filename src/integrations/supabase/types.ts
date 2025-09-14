@@ -23,6 +23,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           last_seen: string | null
+          organization_id: string | null
           updated_at: string
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_seen?: string | null
+          organization_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -43,9 +45,18 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_seen?: string | null
+          organization_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "driver_devices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gps_tracking: {
         Row: {
@@ -60,6 +71,7 @@ export type Database = {
           is_moving: boolean | null
           latitude: number
           longitude: number
+          organization_id: string | null
           speed: number | null
           timestamp: string
         }
@@ -75,6 +87,7 @@ export type Database = {
           is_moving?: boolean | null
           latitude: number
           longitude: number
+          organization_id?: string | null
           speed?: number | null
           timestamp?: string
         }
@@ -90,8 +103,226 @@ export type Database = {
           is_moving?: boolean | null
           latitude?: number
           longitude?: number
+          organization_id?: string | null
           speed?: number | null
           timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_tracking_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          organization_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          organization_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          organization_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      speed_violations: {
+        Row: {
+          created_at: string
+          device_id: string
+          driver_id: string
+          excess_speed_kmh: number
+          id: string
+          is_acknowledged: boolean | null
+          organization_id: string | null
+          recorded_speed_kmh: number
+          severity: string
+          speed_limit_kmh: number
+          timestamp: string
+          violation_lat: number
+          violation_lng: number
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          driver_id: string
+          excess_speed_kmh: number
+          id?: string
+          is_acknowledged?: boolean | null
+          organization_id?: string | null
+          recorded_speed_kmh: number
+          severity?: string
+          speed_limit_kmh: number
+          timestamp?: string
+          violation_lat: number
+          violation_lng: number
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          driver_id?: string
+          excess_speed_kmh?: number
+          id?: string
+          is_acknowledged?: boolean | null
+          organization_id?: string | null
+          recorded_speed_kmh?: number
+          severity?: string
+          speed_limit_kmh?: number
+          timestamp?: string
+          violation_lat?: number
+          violation_lng?: number
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speed_violations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_violations_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "speed_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speed_zones: {
+        Row: {
+          center_lat: number
+          center_lng: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          radius_meters: number
+          speed_limit_kmh: number
+          updated_at: string
+          zone_type: string
+        }
+        Insert: {
+          center_lat: number
+          center_lng: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          radius_meters?: number
+          speed_limit_kmh: number
+          updated_at?: string
+          zone_type?: string
+        }
+        Update: {
+          center_lat?: number
+          center_lng?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          radius_meters?: number
+          speed_limit_kmh?: number
+          updated_at?: string
+          zone_type?: string
+        }
+        Relationships: []
+      }
+      user_organizations: {
+        Row: {
+          created_at: string | null
+          id: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_organizations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -100,10 +331,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_user_organization_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "fleet_manager" | "driver"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -230,6 +468,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "fleet_manager", "driver"],
+    },
   },
 } as const
