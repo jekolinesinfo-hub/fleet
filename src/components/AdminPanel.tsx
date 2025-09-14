@@ -112,10 +112,17 @@ const AdminPanel = () => {
 
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newOrgName.trim()) return;
+    console.log('🧪 handleCreateOrganization submit', { newOrgName });
+    if (!newOrgName.trim()) {
+      toast.error('Inserisci un nome organizzazione valido');
+      return;
+    }
 
-    await createOrganization(newOrgName);
-    setNewOrgName('');
+    const res = await createOrganization(newOrgName.trim());
+    console.log('📦 createOrganization response:', res);
+    if (!res?.error) {
+      setNewOrgName('');
+    }
   };
 
   const handleUpdateOrganization = async (e: React.FormEvent) => {
