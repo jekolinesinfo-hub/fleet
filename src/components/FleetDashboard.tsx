@@ -9,12 +9,14 @@ import AlertCenter from "./AlertCenter";
 import LanguageSelector from "./LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useFleetData } from "@/hooks/useFleetData";
+import { useTranslation } from "@/contexts/I18nContext";
 import { Activity, Users, AlertTriangle, MapPin, UserPlus, ArrowLeft, Settings, LogOut, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const FleetDashboard = () => {
   const { signOut, profile, isAdmin } = useAuth();
   const { drivers, vehicles, getActiveDrivers, loading } = useFleetData();
+  const { t } = useTranslation();
   const [activeView, setActiveView] = useState<'dashboard' | 'driver' | 'registration'>('dashboard');
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [trackedDriverId, setTrackedDriverId] = useState<string | null>(null);
@@ -64,15 +66,15 @@ const FleetDashboard = () => {
                   onClick={() => setActiveView('dashboard')}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Torna alla Dashboard
+                  {t('backToDashboard')}
                 </Button>
               )}
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Fleet Management</h1>
+                <h1 className="text-2xl font-bold text-foreground">{t('fleetManagement')}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {activeView === 'dashboard' && 'Dashboard di controllo flotta'}
-                  {activeView === 'driver' && 'Dettagli driver'}
-                  {activeView === 'registration' && 'Registrazione driver'}
+                  {activeView === 'dashboard' && t('fleetControlDashboard')}
+                  {activeView === 'driver' && t('driverDetails')}
+                  {activeView === 'registration' && t('driverRegistration')}
                 </p>
               </div>
             </div>
@@ -82,7 +84,7 @@ const FleetDashboard = () => {
               
               {profile && (
                 <span className="text-sm text-muted-foreground">
-                  Benvenuto, {profile.full_name || profile.email}
+                  {t('welcome')}, {profile.full_name || profile.email}
                 </span>
               )}
               
@@ -90,7 +92,7 @@ const FleetDashboard = () => {
                 <Link to="/admin">
                   <Button variant="outline" size="sm">
                     <Shield className="h-4 w-4 mr-2" />
-                    Admin
+                    {t('admin')}
                   </Button>
                 </Link>
               )}
@@ -102,7 +104,7 @@ const FleetDashboard = () => {
                   size="sm"
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Registra Driver
+                  {t('registerDriver')}
                 </Button>
               )}
               
@@ -112,7 +114,7 @@ const FleetDashboard = () => {
                 size="sm"
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Esci
+                {t('exit')}
               </Button>
             </div>
           </div>
@@ -127,7 +129,7 @@ const FleetDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Veicoli Totali</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('totalVehicles')}</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -137,7 +139,7 @@ const FleetDashboard = () => {
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Conducenti Attivi</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('activeDrivers')}</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -147,7 +149,7 @@ const FleetDashboard = () => {
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Alert Attivi</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('activeAlerts')}</CardTitle>
                   <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -157,7 +159,7 @@ const FleetDashboard = () => {
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Distanza Totale</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('totalDistance')}</CardTitle>
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -173,7 +175,7 @@ const FleetDashboard = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Mappa in Tempo Reale
+                    {t('realTimeMap')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -187,7 +189,7 @@ const FleetDashboard = () => {
               {/* Drivers List */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Conducenti Attivi</CardTitle>
+                  <CardTitle>{t('activeDriversList')}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <DriversList 

@@ -65,7 +65,24 @@ export const translations = {
     dailyLimit: "Daily limit",
     weeklyLimit: "Weekly limit",
     biweeklyLimit: "Bi-weekly limit",
-    effectiveDriving: "Effective driving"
+    effectiveDriving: "Effective driving",
+    
+    // Fleet Dashboard
+    fleetManagement: "Fleet Management",
+    fleetControlDashboard: "Fleet Control Dashboard",
+    driverDetails: "Driver Details",
+    driverRegistration: "Driver Registration",
+    backToDashboard: "Back to Dashboard",
+    welcome: "Welcome",
+    admin: "Admin",
+    registerDriver: "Register Driver",
+    exit: "Exit",
+    totalVehicles: "Total Vehicles",
+    activeDrivers: "Active Drivers",
+    activeAlerts: "Active Alerts",
+    totalDistance: "Total Distance",
+    realTimeMap: "Real Time Map",
+    activeDriversList: "Active Drivers"
   },
   
   it: {
@@ -134,7 +151,24 @@ export const translations = {
     dailyLimit: "Limite giornaliero",
     weeklyLimit: "Limite settimanale",
     biweeklyLimit: "Limite bisettimanale",
-    effectiveDriving: "Di guida effettiva"
+    effectiveDriving: "Di guida effettiva",
+    
+    // Fleet Dashboard
+    fleetManagement: "Gestione Flotta",
+    fleetControlDashboard: "Dashboard di controllo flotta",
+    driverDetails: "Dettagli driver",
+    driverRegistration: "Registrazione driver",
+    backToDashboard: "Torna alla Dashboard",
+    welcome: "Benvenuto",
+    admin: "Admin",
+    registerDriver: "Registra Driver",
+    exit: "Esci",
+    totalVehicles: "Veicoli Totali",
+    activeDrivers: "Conducenti Attivi",
+    activeAlerts: "Alert Attivi",
+    totalDistance: "Distanza Totale",
+    realTimeMap: "Mappa in Tempo Reale",
+    activeDriversList: "Conducenti Attivi"
   },
   
   fr: {
@@ -203,7 +237,24 @@ export const translations = {
     dailyLimit: "Limite quotidienne",
     weeklyLimit: "Limite hebdomadaire",
     biweeklyLimit: "Limite bihebdomadaire",
-    effectiveDriving: "De conduite effective"
+    effectiveDriving: "De conduite effective",
+    
+    // Fleet Dashboard
+    fleetManagement: "Gestion de Flotte",
+    fleetControlDashboard: "Tableau de bord de contrôle de flotte",
+    driverDetails: "Détails du conducteur",
+    driverRegistration: "Enregistrement de conducteur",
+    backToDashboard: "Retour au tableau de bord",
+    welcome: "Bienvenue",
+    admin: "Admin",
+    registerDriver: "Enregistrer Conducteur",
+    exit: "Sortir",
+    totalVehicles: "Véhicules Totaux",
+    activeDrivers: "Conducteurs Actifs",
+    activeAlerts: "Alertes Actives",
+    totalDistance: "Distance Totale",
+    realTimeMap: "Carte en Temps Réel",
+    activeDriversList: "Conducteurs Actifs"
   },
   
   de: {
@@ -272,7 +323,24 @@ export const translations = {
     dailyLimit: "Tageslimit",
     weeklyLimit: "Wochenlimit",
     biweeklyLimit: "Zweiwochenlimit",
-    effectiveDriving: "Effektive Fahrt"
+    effectiveDriving: "Effektive Fahrt",
+    
+    // Fleet Dashboard
+    fleetManagement: "Flottenmanagement",
+    fleetControlDashboard: "Flotten-Kontrolltafel",
+    driverDetails: "Fahrer-Details",
+    driverRegistration: "Fahrer-Registrierung",
+    backToDashboard: "Zurück zum Dashboard",
+    welcome: "Willkommen",
+    admin: "Admin",
+    registerDriver: "Fahrer Registrieren",
+    exit: "Ausgang",
+    totalVehicles: "Fahrzeuge Gesamt",
+    activeDrivers: "Aktive Fahrer",
+    activeAlerts: "Aktive Warnungen",
+    totalDistance: "Gesamtdistanz",
+    realTimeMap: "Echtzeit-Karte",
+    activeDriversList: "Aktive Fahrer"
   },
   
   ro: {
@@ -341,7 +409,24 @@ export const translations = {
     dailyLimit: "Limita zilnică",
     weeklyLimit: "Limita săptămânală",
     biweeklyLimit: "Limita bi-săptămânală",
-    effectiveDriving: "De condus efectiv"
+    effectiveDriving: "De condus efectiv",
+    
+    // Fleet Dashboard
+    fleetManagement: "Gestionarea Flotei",
+    fleetControlDashboard: "Tablou de bord de control flotă",
+    driverDetails: "Detalii șofer",
+    driverRegistration: "Înregistrare șofer",
+    backToDashboard: "Înapoi la tabloul de bord",
+    welcome: "Bun venit",
+    admin: "Admin",
+    registerDriver: "Înregistrează Șofer",
+    exit: "Ieșire",
+    totalVehicles: "Vehicule Totale",
+    activeDrivers: "Șoferi Activi",
+    activeAlerts: "Alerte Active",
+    totalDistance: "Distanța Totală",
+    realTimeMap: "Hartă în Timp Real",
+    activeDriversList: "Șoferi Activi"
   }
 };
 
