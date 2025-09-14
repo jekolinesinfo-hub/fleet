@@ -120,20 +120,20 @@ const getStatusInfo = (status: string) => {
 };
 
 const DriversList = ({ onDriverSelect, onDriverTrack, driversData = [], loading = false }: DriversListProps) => {
-  // Use real data if provided, otherwise fall back to mock data
-  const drivers = driversData.length > 0 ? driversData.map(({ driver, position, vehicle }) => ({
+  // Use only real data. If none, show empty state.
+  const drivers = (driversData || []).map(({ driver, position, vehicle }) => ({
     id: driver.id,
     name: driver.name,
-    vehicleId: vehicle?.device_id || 'N/A',
-    vehicleType: vehicle?.type || 'Vehicle',
+    vehicleId: vehicle?.device_id || 'N/D',
+    vehicleType: vehicle?.type || 'Veicolo',
     status: getDriverStatusFromPosition(position),
-    location: `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`,
+    location: position ? `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}` : 'N/D',
     drivingTime: getDrivingTime(position),
     restTime: getRestTime(position),
-    violations: 0, // TODO: Calculate from speed violations
+    violations: 0,
     phone: driver.email,
-    lastUpdate: getLastUpdate(position.timestamp)
-  })) : mockDrivers;
+    lastUpdate: position?.timestamp ? getLastUpdate(position.timestamp) : 'N/D'
+  }));
 
   if (loading) {
     return (
@@ -142,9 +142,18 @@ const DriversList = ({ onDriverSelect, onDriverTrack, driversData = [], loading 
       </div>
     );
   }
+  
+  if (drivers.length === 0) {
+    return (
+      <div className="p-6 text-center text-muted-foreground">
+        Nessun conducente attivo nella tua flotta.
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-2 p-4 max-h-[400px] overflow-y-auto">
-      {mockDrivers.map((driver) => {
+      {drivers.map((driver) => {
         const statusInfo = getStatusInfo(driver.status);
         
         return (
@@ -204,22 +213,22 @@ const DriversList = ({ onDriverSelect, onDriverTrack, driversData = [], loading 
                 
                 {/* Indicatori di Stato */}
                 <div className="text-right space-y-1">
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Guida: </span>
-                  <span className={`font-medium ${
-                    driver.status === 'alert' ? 'text-alert' : 'text-foreground'
-                  }`}>
-                    {driver.drivingTime}
-                  </span>
-                </div>
-                
-                {driver.violations > 0 && (
-                  <div className="flex items-center space-x-1 text-alert">
-                    <AlertTriangle className="h-3 w-3" />
-                    <span className="text-xs font-medium">{driver.violations} violazioni</span>
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">Guida: </span>
+                    <span className={`font-medium ${
+                      driver.status === 'alert' ? 'text-alert' : 'text-foreground'
+                    }`}>
+                      {driver.drivingTime}
+                    </span>
                   </div>
-                )}
-                
+                  
+                  {driver.violations > 0 && (
+                    <div className="flex items-center space-x-1 text-alert">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span className="text-xs font-medium">{driver.violations} violazioni</span>
+                    </div>
+                  )}
+                  
                   <div className="text-xs text-muted-foreground">
                     {driver.lastUpdate}
                   </div>

@@ -5,7 +5,7 @@ import FleetMap from "./FleetMap";
 import DriversList from "./DriversList";
 import DriverDetails from "./DriverDetails";
 import DriverRegistration from "./DriverRegistration";
-import AlertCenter from "./AlertCenter";
+import FleetManager from "./FleetManager";
 import LanguageSelector from "./LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useFleetData } from "@/hooks/useFleetData";
