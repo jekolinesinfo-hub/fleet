@@ -2,41 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Fleet Management Design System - Professional Dashboard Colors */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Fleet Management Color Palette */
+    --background: 240 7% 97%;
+    --foreground: 215 20% 17%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 20% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 20% 17%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 216 87% 52%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 216 87% 47%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 215 15% 92%;
+    --secondary-foreground: 215 20% 17%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 215 15% 95%;
+    --muted-foreground: 215 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --alert: 0 84% 60%;
+    --alert-foreground: 0 0% 100%;
+
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 216 87% 52%;
+
+    --radius: 8px;
+
+    /* Fleet Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(216 87% 62%));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(142 76% 46%));
+    --gradient-warning: linear-gradient(135deg, hsl(var(--warning)), hsl(45 93% 57%));
+    --gradient-alert: linear-gradient(135deg, hsl(var(--alert)), hsl(0 84% 70%));
+    
+    /* Dashboard Shadows */
+    --shadow-card: 0 1px 3px 0 hsl(215 20% 17% / 0.1), 0 1px 2px 0 hsl(215 20% 17% / 0.06);
+    --shadow-elevated: 0 10px 25px -5px hsl(215 20% 17% / 0.1), 0 10px 10px -5px hsl(215 20% 17% / 0.04);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +124,52 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Fleet Management Utilities */
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .gradient-warning {
+    background: var(--gradient-warning);
+  }
+  
+  .gradient-alert {
+    background: var(--gradient-alert);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .animate-pulse-slow {
+    animation: var(--animation-pulse-slow);
+  }
+  
+  .status-online {
+    @apply bg-success text-success-foreground;
+  }
+  
+  .status-offline {
+    @apply bg-muted text-muted-foreground;
+  }
+  
+  .status-alert {
+    @apply bg-alert text-alert-foreground animate-pulse-slow;
   }
 }
