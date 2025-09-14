@@ -1,14 +1,19 @@
+import React, { useEffect, useRef, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPin, Truck, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-// Mock data per i veicoli sulla mappa
+// Mock data per i veicoli sulla mappa con coordinate reali
 const mockVehicles = [
   { 
     id: "V001", 
     driver: "Marco Rossi", 
     type: "Camion", 
     status: "driving", 
-    position: { x: 25, y: 30 },
+    coordinates: [12.4964, 41.9028], // Roma
     lastUpdate: "2 min fa"
   },
   { 
@@ -16,7 +21,7 @@ const mockVehicles = [
     driver: "Luca Bianchi", 
     type: "Furgone", 
     status: "resting", 
-    position: { x: 60, y: 45 },
+    coordinates: [9.1900, 45.4642], // Milano
     lastUpdate: "5 min fa"
   },
   { 
@@ -24,7 +29,7 @@ const mockVehicles = [
     driver: "Anna Verde", 
     type: "Taxi", 
     status: "alert", 
-    position: { x: 40, y: 60 },
+    coordinates: [11.2558, 43.7696], // Firenze
     lastUpdate: "1 min fa"
   },
   { 
@@ -32,7 +37,7 @@ const mockVehicles = [
     driver: "Giuseppe Neri", 
     type: "Camion", 
     status: "driving", 
-    position: { x: 75, y: 25 },
+    coordinates: [14.2681, 40.8518], // Napoli
     lastUpdate: "3 min fa"
   },
 ];
@@ -63,70 +68,129 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-const FleetMap = () => {
-  return (
-    <div className="relative w-full h-[400px] bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg overflow-hidden">
-      {/* Mappa Simulata con Grid */}
-      <div className="absolute inset-0">
-        {/* Grid lines per simulare strade */}
-        <svg className="absolute inset-0 w-full h-full opacity-20">
-          <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="hsl(var(--primary))" strokeWidth="1"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
-        
-        {/* Strade principali */}
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-primary/30 transform -translate-y-1/2"></div>
-        <div className="absolute left-1/2 top-0 h-full w-1 bg-primary/30 transform -translate-x-1/2"></div>
-      </div>
+interface FleetMapProps {
+  selectedDriverId?: string | null;
+}
 
-      {/* Veicoli sulla mappa */}
-      {mockVehicles.map((vehicle) => (
-        <div
-          key={vehicle.id}
-          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-          style={{
-            left: `${vehicle.position.x}%`,
-            top: `${vehicle.position.y}%`,
-          }}
-        >
-          {/* Marker del veicolo */}
-          <div className={`
-            p-2 rounded-full border-2 transition-all duration-300 group-hover:scale-110
-            ${getStatusColor(vehicle.status)}
-            ${vehicle.status === 'alert' ? 'shadow-lg shadow-alert/25' : 'shadow-md'}
-          `}>
-            {getStatusIcon(vehicle.status)}
-          </div>
+const FleetMap: React.FC<FleetMapProps> = ({ selectedDriverId }) => {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
+  const [mapboxToken, setMapboxToken] = useState('');
+  const [isMapReady, setIsMapReady] = useState(false);
 
-          {/* Tooltip informazioni */}
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-            <div className="bg-card border rounded-lg shadow-elevated p-3 min-w-[200px]">
-              <div className="text-sm font-semibold text-foreground">{vehicle.driver}</div>
-              <div className="text-xs text-muted-foreground">ID: {vehicle.id}</div>
-              <div className="flex items-center justify-between mt-2">
-                <Badge variant="outline" className="text-xs">
-                  {vehicle.type}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {vehicle.lastUpdate}
-                </span>
-              </div>
-              {vehicle.status === 'alert' && (
-                <div className="text-xs text-alert mt-1 font-medium">
-                  ⚠️ Violazione normative
-                </div>
-              )}
-            </div>
+  useEffect(() => {
+    if (!mapContainer.current || !mapboxToken) return;
+
+    mapboxgl.accessToken = mapboxToken;
+    
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [12.4964, 41.9028], // Centro Italia
+      zoom: 6
+    });
+
+    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    
+    map.current.on('load', () => {
+      setIsMapReady(true);
+      addVehicleMarkers();
+    });
+
+    return () => {
+      map.current?.remove();
+    };
+  }, [mapboxToken]);
+
+  useEffect(() => {
+    if (isMapReady && selectedDriverId) {
+      const vehicle = mockVehicles.find(v => v.id === selectedDriverId);
+      if (vehicle && map.current) {
+        map.current.flyTo({
+          center: vehicle.coordinates as [number, number],
+          zoom: 14,
+          duration: 2000
+        });
+      }
+    }
+  }, [selectedDriverId, isMapReady]);
+
+  const addVehicleMarkers = () => {
+    mockVehicles.forEach((vehicle) => {
+      const el = document.createElement('div');
+      el.className = `marker-${vehicle.status}`;
+      el.style.cssText = `
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        ${vehicle.status === 'driving' ? 'background: hsl(var(--success));' : ''}
+        ${vehicle.status === 'resting' ? 'background: hsl(var(--warning));' : ''}
+        ${vehicle.status === 'alert' ? 'background: hsl(var(--alert)); animation: pulse 2s infinite;' : ''}
+      `;
+      
+      const icon = vehicle.status === 'driving' ? '🚛' : 
+                   vehicle.status === 'resting' ? '⏸️' : '⚠️';
+      el.innerHTML = icon;
+
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
+        <div class="p-2">
+          <div class="font-semibold">${vehicle.driver}</div>
+          <div class="text-xs text-gray-600">ID: ${vehicle.id}</div>
+          <div class="text-xs text-gray-600">Tipo: ${vehicle.type}</div>
+          <div class="text-xs text-gray-600">Aggiornato: ${vehicle.lastUpdate}</div>
+          ${vehicle.status === 'alert' ? '<div class="text-xs text-red-600 font-medium mt-1">⚠️ Violazione normative</div>' : ''}
+        </div>
+      `);
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat(vehicle.coordinates as [number, number])
+        .setPopup(popup)
+        .addTo(map.current!);
+
+      markers.current[vehicle.id] = marker;
+    });
+  };
+
+  if (!mapboxToken) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[400px] bg-muted rounded-lg p-6">
+        <div className="text-center mb-4">
+          <h3 className="font-semibold mb-2">Configura Mapbox Token</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Per utilizzare la mappa reale, inserisci il tuo Mapbox Public Token.
+            <br />
+            Puoi trovarlo su <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">mapbox.com</a>
+          </p>
+          <div className="flex gap-2 max-w-md">
+            <Input
+              placeholder="pk.eyJ1IjoieW91ci11c2VybmFtZSIsImEiOiJ..."
+              value={mapboxToken}
+              onChange={(e) => setMapboxToken(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={() => setIsMapReady(false)}>
+              Connetti
+            </Button>
           </div>
         </div>
-      ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-[400px] rounded-lg overflow-hidden">
+      <div ref={mapContainer} className="absolute inset-0" />
 
       {/* Legenda */}
-      <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-card">
+      <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-card z-10">
         <div className="text-xs font-semibold mb-2">Legenda</div>
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
@@ -145,10 +209,10 @@ const FleetMap = () => {
       </div>
 
       {/* Contatore Real-time */}
-      <div className="absolute top-4 right-4 bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-card">
+      <div className="absolute top-4 right-4 bg-card/95 backdrop-blur-sm rounded-lg p-3 shadow-card z-10">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-          <span className="text-xs font-medium">Live Tracking</span>
+          <span className="text-xs font-medium">Live GPS Tracking</span>
         </div>
         <div className="text-xs text-muted-foreground mt-1">
           {mockVehicles.length} veicoli monitorati

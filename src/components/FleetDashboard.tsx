@@ -116,7 +116,7 @@ const FleetDashboard = () => {
                     </div>
                   </div>
                   <div className="p-0">
-                    <FleetMap />
+                    <FleetMap selectedDriverId={selectedDriverId} />
                   </div>
                 </Card>
 
