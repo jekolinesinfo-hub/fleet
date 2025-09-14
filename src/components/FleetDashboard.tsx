@@ -6,6 +6,7 @@ import DriversList from "./DriversList";
 import DriverDetails from "./DriverDetails";
 import DriverRegistration from "./DriverRegistration";
 import AlertCenter from "./AlertCenter";
+import LanguageSelector from "./LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useFleetData } from "@/hooks/useFleetData";
 import { Activity, Users, AlertTriangle, MapPin, UserPlus, ArrowLeft, Settings, LogOut, Shield } from "lucide-react";
@@ -77,6 +78,8 @@ const FleetDashboard = () => {
             </div>
             
             <div className="flex items-center space-x-2">
+              <LanguageSelector />
+              
               {profile && (
                 <span className="text-sm text-muted-foreground">
                   Benvenuto, {profile.full_name || profile.email}
