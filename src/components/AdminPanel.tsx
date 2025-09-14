@@ -41,7 +41,7 @@ const AdminPanel = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserFullName, setNewUserFullName] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'fleet_manager' | 'driver'>('fleet_manager');
-  const [selectedOrgForNewUser, setSelectedOrgForNewUser] = useState('');
+  const [selectedOrgForNewUser, setSelectedOrgForNewUser] = useState('none');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
 
@@ -149,6 +149,13 @@ const AdminPanel = () => {
 
   const createNewUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🔧 DEBUG: Starting user creation process');
+    console.log('📧 Email:', newUserEmail);
+    console.log('👤 Name:', newUserFullName);
+    console.log('🏷️ Role:', newUserRole);
+    console.log('🏢 Org:', selectedOrgForNewUser);
+    
     if (!newUserEmail.trim() || !newUserFullName.trim()) {
       toast.error('Tutti i campi sono obbligatori');
       return;
@@ -161,8 +168,7 @@ const AdminPanel = () => {
       // For now, we'll create a placeholder entry that the user can activate later
       // This requires the user to manually sign up, but the admin can pre-assign roles
       
-      // Create a temporary entry to track this user creation request
-      const tempUserId = crypto.randomUUID();
+      console.log('🔑 Generated password:', password);
       
       toast.success(`Credenziali generate per ${newUserFullName}:`);
       toast.success(`Email: ${newUserEmail}`);
@@ -180,21 +186,22 @@ const AdminPanel = () => {
         3. Dopo la registrazione, contatta l'amministratore per l'assegnazione del ruolo
       `;
       
-      console.log(instructions);
+      console.log('📋 Instructions:', instructions);
 
       setGeneratedPassword(password);
-      toast.success('Utente creato con successo!');
+      toast.success('Credenziali generate con successo!');
       
       // Reset form
       setNewUserEmail('');
       setNewUserFullName('');
       setNewUserRole('fleet_manager');
-      setSelectedOrgForNewUser('');
+      setSelectedOrgForNewUser('none');
       
-      await fetchUsers();
+      console.log('✅ User creation process completed');
+      
     } catch (error) {
-      toast.error('Errore nella creazione dell\'utente');
-      console.error('Create user error:', error);
+      console.error('❌ Create user error:', error);
+      toast.error('Errore nella generazione delle credenziali');
     } finally {
       setIsCreatingUser(false);
     }
@@ -443,7 +450,7 @@ const AdminPanel = () => {
                         <SelectValue placeholder="Seleziona organizzazione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nessuna organizzazione</SelectItem>
+                        <SelectItem value="none">Nessuna organizzazione</SelectItem>
                         {organizations.map((org) => (
                           <SelectItem key={org.id} value={org.id}>
                             {org.name}
